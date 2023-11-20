@@ -49,8 +49,8 @@ pub async fn create(addr: &str, https: bool) {
             let mut ssl = SslAcceptor::mozilla_intermediate_v5(SslMethod::tls()).expect("Failed to create SSL Acceptor");
 
             // Server authentication
-            ssl.set_private_key_file("server/cert/server-key.pem", SslFiletype::PEM).expect("Failed to set private key");
-            ssl.set_certificate_chain_file("server/cert/server-chain.pem").expect("Failed to set certificate chain");
+            ssl.set_private_key_file("tmf639/server/cert/server-key.pem", SslFiletype::PEM).expect("Failed to set private key");
+            ssl.set_certificate_chain_file("tmf639/server/cert/server-chain.pem").expect("Failed to set certificate chain");
             ssl.check_private_key().expect("Failed to check private key");
 
             let tls_acceptor = ssl.build();

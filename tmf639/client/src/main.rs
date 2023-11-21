@@ -4,7 +4,7 @@
 #[allow(unused_imports)]
 use futures::{future, Stream, stream};
 #[allow(unused_imports)]
-use tmf639_server::{Api, ApiNoContext, Client, ContextWrapperExt, models,
+use oda_sdk_tmf639::{Api, ApiNoContext, Client, ContextWrapperExt, models,
                       RegisterListenerResponse,
                       UnregisterListenerResponse,
                       ListenToResourceAttributeValueChangeEventResponse,

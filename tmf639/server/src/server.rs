@@ -1,4 +1,4 @@
-//! Main library entry point for tmf639_server implementation.
+//! Main library entry point for TMF639 server implementation.
 
 #![allow(unused_imports)]
 
@@ -20,7 +20,7 @@ use tokio::net::TcpListener;
 #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
 use openssl::ssl::{Ssl, SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 
-use tmf639_server::models;
+use oda_sdk_tmf639::models;
 
 /// Builds an SSL implementation for Simple HTTPS from some hard-coded file names
 pub async fn create(addr: &str, https: bool) {
@@ -34,7 +34,7 @@ pub async fn create(addr: &str, https: bool) {
 
     #[allow(unused_mut)]
     let mut service =
-        tmf639_server::server::context::MakeAddContext::<_, EmptyContext>::new(
+        oda_sdk_tmf639::server::context::MakeAddContext::<_, EmptyContext>::new(
             service
         );
 
@@ -92,7 +92,7 @@ impl<C> Server<C> {
 }
 
 
-use tmf639_server::{
+use oda_sdk_tmf639::{
     Api,
     RegisterListenerResponse,
     UnregisterListenerResponse,
@@ -106,7 +106,7 @@ use tmf639_server::{
     PatchResourceResponse,
     RetrieveResourceResponse,
 };
-use tmf639_server::server::MakeService;
+use oda_sdk_tmf639::server::MakeService;
 use std::error::Error;
 use swagger::ApiError;
 

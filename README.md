@@ -17,15 +17,15 @@ cargo doc --workspace
 
 ### TMF634
 ```bash
-cargo run --package oda_ri_tmf634 --bin tmf634_server &
+RUST_LOG=info cargo run --package oda_ri_tmf634 --bin tmf634_server &
 cargo run --package oda_ri_tmf634 --bin tmf634_client -- --help
-cargo run --package oda_ri_tmf634 --bin tmf634_client ListResourceSpecification
+RUST_LOG=info cargo run --package oda_ri_tmf634 --bin tmf634_client -- --host localhost ListResourceSpecification
 ```
 
 ### TMF639
 ```bash
-cargo run --package oda_ri_tmf639 --bin tmf639_server &
+RUST_LOG=info cargo run --package oda_ri_tmf639 --bin tmf639_server &
 cargo run --package oda_ri_tmf639 --bin tmf639_client -- --help
-cargo run --package oda_ri_tmf639 --bin tmf639_client ListResource
+RUST_LOG=info cargo run --package oda_ri_tmf639 --bin tmf639_client -- --host localhost ListResource
 ```
 

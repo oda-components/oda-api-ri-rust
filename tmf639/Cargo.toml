@@ -1,17 +1,17 @@
 [package]
-name = "oda_639_ri"
+name = "oda_ri_tmf639"
 version = "0.1.0"
 edition = "2021"
 
 # Executable crate
 
 [[bin]]
-name = "client"
+name = "tmf639_client"
 path = "client/src/main.rs"
 required-features = ["client"]
 
 [[bin]]
-name = "server"
+name = "tmf639_server"
 path = "server/src/main.rs"
 required-features = ["server"]
 
@@ -35,7 +35,7 @@ openssl = {version = "0.10", optional = true }
 
 [dependencies]
 # Rust SDK
-tmf639-server = { path = "../../oda-api-sdk-rust/tmf639-server" }
+oda_sdk_tmf639 = { path = "../../oda-api-sdk-rust/tmf639" }
 
 # Common
 async-trait = "0.1.24"
@@ -44,7 +44,6 @@ futures = "0.3"
 swagger = { version = "6.1", features = ["serdejson", "server", "client", "tls", "tcp"] }
 log = "0.4.0"
 mime = "0.3"
-
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 validator = { version = "0.16", features = ["derive"] }
@@ -77,3 +76,4 @@ clap = "2.25"
 env_logger = "0.7"
 native-tls = "0.2"
 tokio-openssl = "0.6"
+

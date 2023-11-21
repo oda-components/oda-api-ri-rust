@@ -20,7 +20,7 @@ use tokio::net::TcpListener;
 #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
 use openssl::ssl::{Ssl, SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 
-use tmf634_server::models;
+use oda_sdk_tmf634::models;
 
 /// Builds an SSL implementation for Simple HTTPS from some hard-coded file names
 pub async fn create(addr: &str, https: bool) {
@@ -34,7 +34,7 @@ pub async fn create(addr: &str, https: bool) {
 
     #[allow(unused_mut)]
     let mut service =
-        tmf634_server::server::context::MakeAddContext::<_, EmptyContext>::new(
+        oda_sdk_tmf634::server::context::MakeAddContext::<_, EmptyContext>::new(
             service
         );
 
@@ -92,7 +92,7 @@ impl<C> Server<C> {
 }
 
 
-use tmf634_server::{
+use oda_sdk_tmf634::{
     Api,
     RegisterListenerResponse,
     UnregisterListenerResponse,
@@ -141,7 +141,7 @@ use tmf634_server::{
     PatchResourceSpecificationResponse,
     RetrieveResourceSpecificationResponse,
 };
-use tmf634_server::server::MakeService;
+use oda_sdk_tmf634::server::MakeService;
 use std::error::Error;
 use swagger::ApiError;
 

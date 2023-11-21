@@ -16,47 +16,26 @@ cargo doc --workspace
 # TMF634
 ## Terminal 1: Server
 ```bash
-cargo run -p oda_ri_tmf634 --bin server
-cargo run -p oda_ri_tmf634 --bin server -- --https
+cargo run -p oda_ri_tmf634 --bin tmf634_server
+cargo run -p oda_ri_tmf634 --bin tmf634_server -- --https
 ```
 
 ## Terminal 2: Client
 ```bash
-cargo run -p oda_ri_tmf634 --bin client -- --help
-cargo run -p oda_ri_tmf634 --bin client UnregisterListener
-cargo run -p oda_ri_tmf634 --bin client DeleteExportJob
-cargo run -p oda_ri_tmf634 --bin client ListExportJob
-cargo run -p oda_ri_tmf634 --bin client RetrieveExportJob
-cargo run -p oda_ri_tmf634 --bin client DeleteImportJob
-cargo run -p oda_ri_tmf634 --bin client ListImportJob
-cargo run -p oda_ri_tmf634 --bin client RetrieveImportJob
-cargo run -p oda_ri_tmf634 --bin client DeleteResourceCandidate
-cargo run -p oda_ri_tmf634 --bin client ListResourceCandidate
-cargo run -p oda_ri_tmf634 --bin client RetrieveResourceCandidate
-cargo run -p oda_ri_tmf634 --bin client DeleteResourceCatalog
-cargo run -p oda_ri_tmf634 --bin client ListResourceCatalog
-cargo run -p oda_ri_tmf634 --bin client RetrieveResourceCatalog
-cargo run -p oda_ri_tmf634 --bin client DeleteResourceCategory
-cargo run -p oda_ri_tmf634 --bin client ListResourceCategory
-cargo run -p oda_ri_tmf634 --bin client RetrieveResourceCategory
-cargo run -p oda_ri_tmf634 --bin client DeleteResourceSpecification
-cargo run -p oda_ri_tmf634 --bin client ListResourceSpecification
-cargo run -p oda_ri_tmf634 --bin client RetrieveResourceSpecification
+cargo run -p oda_ri_tmf634 --bin tmf634_client -- --help
+cargo run -p oda_ri_tmf634 --bin tmf634_client ListResourceSpecification
 ```
 
 # TMF639
 ## Terminal 1: Server
 ```bash
-cargo run -p oda_ri_tmf639 --bin server
-cargo run -p oda_ri_tmf639 --bin server -- --https
+cargo run -p oda_ri_tmf639 --bin tmf639_server
+cargo run -p oda_ri_tmf639 --bin tmf639_server -- --https
 ```
 
 ## Terminal 2: Client
 ```bash
-cargo run -p oda_ri_tmf639 --bin client -- --help
-cargo run -p oda_ri_tmf639 --bin client UnregisterListener
-cargo run -p oda_ri_tmf639 --bin client DeleteResource
-cargo run -p oda_ri_tmf639 --bin client ListResource
-cargo run -p oda_ri_tmf639 --bin client RetrieveResource
+cargo run -p oda_ri_tmf639 --bin tmf639_client -- --help
+cargo run -p oda_ri_tmf639 --bin tmf639_client ListResource
 ```
 

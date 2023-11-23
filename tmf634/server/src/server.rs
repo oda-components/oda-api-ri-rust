@@ -23,8 +23,18 @@ use openssl::ssl::{Ssl, SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod}
 use oda_sdk_tmf634::models;
 
 /// Builds an SSL implementation for Simple HTTPS from some hard-coded file names
-pub async fn create(addr: &str, https: bool) {
-    let addr = addr.parse().expect("Failed to parse bind address");
+pub async fn create(redis_uri: &str, bind: &str, port: &str, https: bool) {
+
+    let redis_client = match redis::Client::open(redis_uri) {
+        Ok(client) => client,
+        Err(error) => panic!("error opening redis: {:?}", error),
+    };
+    let mut redis_connection = match redis_client.get_connection() {
+        Ok(connection) => connection,
+        Err(error) => panic!("error connecting redis: {:?}", error),
+    };
+
+    let addr = format!("{}:{}", bind, port).parse().expect("Failed to parse bind address");
 
     let server = Server::new();
 
@@ -76,7 +86,14 @@ pub async fn create(addr: &str, https: bool) {
         }
     } else {
         // Using HTTP
-        hyper::server::Server::bind(&addr).serve(service).await.unwrap()
+        let server = match hyper::server::Server::try_bind(&addr) {
+            Ok(builder) => builder.serve(service),
+            Err(error) => panic!("error binding server: {:?}", error),
+        };
+        match server.await {
+            Ok(_) => (),
+            Err(error) => panic!("server error: {:?}", error),
+        };
     }
 }
 

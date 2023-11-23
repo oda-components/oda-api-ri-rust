@@ -1,4 +1,4 @@
-//! Main binary entry point for oda_sdk_tmf634 implementation.
+//! Main binary entry point for tmf634_server implementation.
 
 #![allow(missing_docs)]
 

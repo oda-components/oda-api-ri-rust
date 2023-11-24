@@ -3,19 +3,19 @@
 #![allow(unused_imports)]
 
 use async_trait::async_trait;
-use futures::{future, Stream, StreamExt, TryFutureExt, TryStreamExt};
 use hyper::server::conn::Http;
 use hyper::service::Service;
 use log::info;
-use std::future::Future;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
 use swagger::{Has, XSpanIdString};
 use swagger::auth::MakeAllowAllAuthenticator;
 use swagger::EmptyContext;
 use tokio::net::TcpListener;
+use redis::Client as RedisClient;
+use redis::AsyncCommands;
+use redis::aio::MultiplexedConnection as RedisConnection;
 
 #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
 use openssl::ssl::{Ssl, SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
@@ -29,14 +29,14 @@ pub async fn create(redis_uri: &str, bind: &str, port: &str, https: bool) {
         Ok(client) => client,
         Err(error) => panic!("error opening redis: {:?}", error),
     };
-    let mut redis_connection = match redis_client.get_connection() {
+    let redis_connection = match redis_client.get_multiplexed_async_connection().await {
         Ok(connection) => connection,
         Err(error) => panic!("error connecting redis: {:?}", error),
     };
 
-    let addr = format!("{}:{}", bind, port).parse().expect("Failed to parse bind address");
+    let addr: SocketAddr = format!("{}:{}", bind, port).parse().expect("Failed to parse bind address");
 
-    let server = Server::new();
+    let server = Server::new(redis_connection);
 
     let service = MakeService::new(server);
 
@@ -86,25 +86,29 @@ pub async fn create(redis_uri: &str, bind: &str, port: &str, https: bool) {
         }
     } else {
         // Using HTTP
-        let server = match hyper::server::Server::try_bind(&addr) {
+        let serve = match hyper::server::Server::try_bind(&addr) {
             Ok(builder) => builder.serve(service),
             Err(error) => panic!("error binding server: {:?}", error),
         };
-        match server.await {
+        match serve.await {
             Ok(_) => (),
             Err(error) => panic!("server error: {:?}", error),
         };
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Server<C> {
     marker: PhantomData<C>,
+    redis_connection: RedisConnection,
 }
 
 impl<C> Server<C> {
-    pub fn new() -> Self {
-        Server{marker: PhantomData}
+    pub fn new(redis_connection: RedisConnection) -> Self {
+        Server{
+            marker: PhantomData,
+            redis_connection,
+        }
     }
 }
 
@@ -600,6 +604,11 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         context: &C) -> Result<CreateResourceSpecificationResponse, ApiError>
     {
         info!("create_resource_specification({:?}) - X-Span-ID: {:?}", resource_specification, context.get().0.clone());
+        let mut con = self.redis_connection.clone();
+        match con.set("foo", 42i32).await {
+            Ok::<String, _>(ok) => info!("redis set returned: {}", ok),
+            Err(error) => panic!("error in redis command: {:?}", error),
+        };
         Err(ApiError("Generic failure".into()))
     }
 

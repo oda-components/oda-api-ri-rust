@@ -1,5 +1,6 @@
 ## Tooling
 * Install [Rust](https://www.rust-lang.org/tools/install).
+* Install [Redis Stack](https://redis.io/docs/install/install-stack/)
 * Install [ODA API Rust SDK: TMF634](https://github.com/oda-components/oda-api-sdk-rust#tmf634)
 * Install [ODA API Rust SDK: TMF639](https://github.com/oda-components/oda-api-sdk-rust#tmf639)
 
@@ -14,6 +15,11 @@ cargo doc --workspace
 ```
 
 ## Run
+
+### Redis
+```bash
+redis-stack-server &
+```
 
 ### TMF634
 ```bash

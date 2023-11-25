@@ -613,6 +613,9 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
             Ok(mut v) => {
                 v["id"] = json!(uuid);
                 v["href"] = json!(location);
+                if v.get("@type").is_none() {
+                    v["@type"] = json!("ResourceSpecification");
+                }
                 v.to_string()
             },
             Err(error) => {

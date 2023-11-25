@@ -76,5 +76,6 @@ clap = "2.25"
 env_logger = "0.7"
 native-tls = "0.2"
 tokio-openssl = "0.6"
-redis = { version = "0.23.3", features = ["tokio-comp"] }
+redis = { version = "0.23.3", features = ["json", "tokio-comp"] }
+uuid = { version = "1.6.1", features = ["v7"] }
 

@@ -14,8 +14,10 @@ use swagger::auth::MakeAllowAllAuthenticator;
 use swagger::EmptyContext;
 use tokio::net::TcpListener;
 use redis::Client as RedisClient;
-use redis::AsyncCommands;
+use redis::JsonAsyncCommands;
 use redis::aio::MultiplexedConnection as RedisConnection;
+use serde_json::json;
+use uuid::Uuid;
 
 #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
 use openssl::ssl::{Ssl, SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
@@ -111,7 +113,6 @@ impl<C> Server<C> {
         }
     }
 }
-
 
 use oda_sdk_tmf634::{
     Api,
@@ -604,12 +605,37 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         context: &C) -> Result<CreateResourceSpecificationResponse, ApiError>
     {
         info!("create_resource_specification({:?}) - X-Span-ID: {:?}", resource_specification, context.get().0.clone());
+        let uuid = Uuid::now_v7().hyphenated().to_string();
+        let location = format!("/tmf-api/resourceCatalog/v4/{}", uuid);
         let mut con = self.redis_connection.clone();
-        match con.set("foo", 42i32).await {
-            Ok::<String, _>(ok) => info!("redis set returned: {}", ok),
-            Err(error) => panic!("error in redis command: {:?}", error),
+        let key = format!("resourceSpecification:{}", uuid);
+        let json = match serde_json::to_value(&resource_specification) {
+            Ok(mut v) => {
+                v["id"] = json!(uuid);
+                v["href"] = json!(location);
+                v.to_string()
+            },
+            Err(error) => {
+                let msg = format!("error encoding to json: {:?}", error);
+                return Err(ApiError(msg));
+            }
         };
-        Err(ApiError("Generic failure".into()))
+        let response = match serde_json::from_str::<models::ResourceSpecification>(&json) {
+            Ok(v) => v,
+            Err(error) => {
+                let msg = format!("error decoding from json: {:?}", error);
+                return Err(ApiError(msg));
+            },
+        };
+        match con.json_set(key, "$", &json).await {
+            Ok::<String, _>(_ok) => {
+                Ok(oda_sdk_tmf634::CreateResourceSpecificationResponse::Created(response))
+            },
+            Err(error) => {
+                let msg = format!("error in redis command: {:?}", error);
+                Err(ApiError(msg))
+            },
+        }
     }
 
     /// Deletes a ResourceSpecification

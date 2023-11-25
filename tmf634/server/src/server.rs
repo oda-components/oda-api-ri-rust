@@ -623,7 +623,7 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                 return Err(ApiError(msg));
             }
         };
-        let response = match serde_json::from_str::<models::ResourceSpecification>(&json) {
+        let entity = match serde_json::from_str::<models::ResourceSpecification>(&json) {
             Ok(v) => v,
             Err(error) => {
                 let msg = format!("error decoding from json: {:?}", error);
@@ -632,7 +632,7 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         };
         match con.json_set(key, "$", &json).await {
             Ok::<String, _>(_ok) => {
-                Ok(oda_sdk_tmf634::CreateResourceSpecificationResponse::Created(response))
+                Ok(oda_sdk_tmf634::CreateResourceSpecificationResponse::Created(entity))
             },
             Err(error) => {
                 let msg = format!("error in redis command: {:?}", error);
@@ -682,7 +682,31 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         context: &C) -> Result<RetrieveResourceSpecificationResponse, ApiError>
     {
         info!("retrieve_resource_specification(\"{}\", {:?}) - X-Span-ID: {:?}", id, fields, context.get().0.clone());
-        Err(ApiError("Generic failure".into()))
+        let key = format!("resourceSpecification:{}", id);
+        let mut con = self.redis_connection.clone();
+        let json = match con.json_get(key, "$").await {
+            Ok::<Vec<String>, _>(v) => v[0].to_string(),
+            Err(error) => {
+                let msg = format!("error in redis command: {:?}", error);
+                return Err(ApiError(msg));
+            },
+        };
+        let root = match serde_json::from_str::<Vec<String>>(&json) {
+            Ok(v) => v[0].to_string(),
+            Err(error) => {
+                let msg = format!("error decoding json: {:?}", error);
+                return Err(ApiError(msg));
+            }
+        };
+        match serde_json::from_str::<models::ResourceSpecification>(&root) {
+            Ok(entity) => {
+                Ok(oda_sdk_tmf634::RetrieveResourceSpecificationResponse::Success(entity))
+            },
+            Err(error) => {
+                let msg = format!("error decoding json: {:?}", error);
+                Err(ApiError(msg))
+            }
+        }
     }
 
 }

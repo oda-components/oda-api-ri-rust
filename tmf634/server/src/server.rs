@@ -45,10 +45,7 @@ pub async fn create(redis_uri: &str, bind: &str, port: &str, https: bool) {
     let service = MakeAllowAllAuthenticator::new(service, "cosmo");
 
     #[allow(unused_mut)]
-    let mut service =
-        oda_sdk_tmf634::server::context::MakeAddContext::<_, EmptyContext>::new(
-            service
-        );
+    let mut service = MakeAddContext::<_, EmptyContext>::new(service);
 
     if https {
         #[cfg(any(target_os = "macos", target_os = "windows", target_os = "ios"))]
@@ -164,6 +161,7 @@ use oda_sdk_tmf634::{
     RetrieveResourceSpecificationResponse,
 };
 use oda_sdk_tmf634::server::MakeService;
+use oda_sdk_tmf634::server::context::MakeAddContext;
 use std::error::Error;
 use swagger::ApiError;
 
@@ -709,7 +707,84 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         context: &C) -> Result<ListResourceSpecificationResponse, ApiError>
     {
         info!("list_resource_specification({:?}, {:?}, {:?}) - X-Span-ID: {:?}", fields, offset, limit, context.get().0.clone());
-        Err(ApiError("Generic failure".into()))
+        let mut con = self.redis_connection.clone();
+        let mut cmd = redis::cmd("FT.SEARCH");
+        match cmd.arg("resourceSpecification").arg("*").query_async(&mut con).await {
+            Ok(redis::Value::Bulk(v)) => {
+                let count = match v[0] {
+                    redis::Value::Int(n) => n as i32,
+                    _ => {
+                        let code = String::from("500");
+                        let reason = String::from("Unexpected result");
+                        let mut error = models::Error::new(code, reason);
+                        let message = format!("unsuccessful redis command: {:?}", v);
+                        error.message = Some(message);
+                        return Ok(ListResourceSpecificationResponse::InternalServerError(error))
+                    }
+                };
+                let mut body = Vec::new();
+                let mut i: usize = 2;
+                let end: usize = (count * 2).try_into().unwrap();
+                while i <= end {
+                    let pair = match &v[i] {
+                        redis::Value::Bulk(result) => result,
+                        _ => {
+                            let code = String::from("500");
+                            let reason = String::from("Unexpected result");
+                            let mut error = models::Error::new(code, reason);
+                            let message = format!("unsuccessful redis command: {:?}", v[i]);
+                            error.message = Some(message);
+                            return Ok(ListResourceSpecificationResponse::InternalServerError(error))
+                        },
+                    };
+                    match &pair[1] {
+                        redis::Value::Data(buf) => {
+                            match serde_json::from_slice::<models::ResourceSpecification>(&buf) {
+                                Ok(entity) => body.push(entity),
+                                Err(result) => {
+                                    let code = String::from("500");
+                                    let reason = String::from("Unexpected result");
+                                    let mut error = models::Error::new(code, reason);
+                                    let message = format!("error decoding json: {:?}", result);
+                                    error.message = Some(message);
+                                    return Ok(ListResourceSpecificationResponse::InternalServerError(error))
+                                },
+                            }
+                        },
+                        _ => {
+                            let code = String::from("500");
+                            let reason = String::from("Unexpected result");
+                            let mut error = models::Error::new(code, reason);
+                            let message = format!("unsuccessful redis command: {:?}", pair[i]);
+                            error.message = Some(message);
+                            return Ok(ListResourceSpecificationResponse::InternalServerError(error))
+                        },
+                    };
+                    i += 2;
+                };
+                Ok(ListResourceSpecificationResponse::Success {
+                    body: body,
+                    x_total_count: None,
+                    x_result_count: Some(count)
+                })
+            },
+            Ok(result) => {
+                let code = String::from("500");
+                let reason = String::from("Unexpected result");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("unsuccessful redis command: {:?}", result);
+                error.message = Some(message);
+                Ok(ListResourceSpecificationResponse::InternalServerError(error))
+            },
+            Err(result) => {
+                let code = String::from("500");
+                let reason = String::from("Unexpected result");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("error on redis command: {:?}", result);
+                error.message = Some(message);
+                Ok(ListResourceSpecificationResponse::InternalServerError(error))
+            },
+        }
     }
 
     /// Updates partially a ResourceSpecification
@@ -785,5 +860,4 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
             }
         }
     }
-
 }

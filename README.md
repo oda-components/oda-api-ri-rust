@@ -6,32 +6,38 @@
 
 ## Build
 ```bash
-cargo build --workspace
+$ cargo build --workspace
 ```
 
 ## Document
 ```bash
-cargo doc --workspace
+$ cargo doc --workspace
 ```
 
 ## Run
 
 ### Redis
+Start the Redis Stack server:
 ```bash
-redis-stack-server &
+$ redis-stack-server
+```
+Initialize an index:
+```bash
+$ redis-cli
+127.0.0.1:6379> FT.CREATE resourceSpecification ON JSON PREFIX 1 resourceSpecification: SCHEMA $.id AS id TAG
 ```
 
 ### TMF634
 ```bash
-RUST_LOG=info cargo run --package oda_ri_tmf634 --bin tmf634_server &
-cargo run --package oda_ri_tmf634 --bin tmf634_client -- --help
-RUST_LOG=info cargo run --package oda_ri_tmf634 --bin tmf634_client -- --host localhost ListResourceSpecification
+$ RUST_LOG=info cargo run --package oda_ri_tmf634 --bin tmf634_server
+$ cargo run --package oda_ri_tmf634 --bin tmf634_client -- --help
+$ RUST_LOG=info cargo run --package oda_ri_tmf634 --bin tmf634_client -- --host localhost ListResourceSpecification
 ```
 
 ### TMF639
 ```bash
-RUST_LOG=info cargo run --package oda_ri_tmf639 --bin tmf639_server &
-cargo run --package oda_ri_tmf639 --bin tmf639_client -- --help
-RUST_LOG=info cargo run --package oda_ri_tmf639 --bin tmf639_client -- --host localhost ListResource
+$ RUST_LOG=info cargo run --package oda_ri_tmf639 --bin tmf639_server &
+$ cargo run --package oda_ri_tmf639 --bin tmf639_client -- --help
+$ RUST_LOG=info cargo run --package oda_ri_tmf639 --bin tmf639_client -- --host localhost ListResource
 ```
 

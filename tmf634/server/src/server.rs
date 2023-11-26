@@ -618,25 +618,46 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                 }
                 v.to_string()
             },
-            Err(error) => {
-                let msg = format!("error encoding to json: {:?}", error);
-                return Err(ApiError(msg));
+            Err(result) => {
+                let code = String::from("400");
+                let reason = String::from("Problem with request body");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("error encoding to json: {:?}", result);
+                error.message = Some(message);
+                return Ok(CreateResourceSpecificationResponse::BadRequest(error))
             }
         };
         let entity = match serde_json::from_str::<models::ResourceSpecification>(&json) {
             Ok(v) => v,
-            Err(error) => {
-                let msg = format!("error decoding from json: {:?}", error);
-                return Err(ApiError(msg));
+            Err(result) => {
+                let code = String::from("400");
+                let reason = String::from("Problem with request body");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("error decoding to json: {:?}", result);
+                error.message = Some(message);
+                return Ok(CreateResourceSpecificationResponse::BadRequest(error))
             },
         };
+        let ok = String::from("OK");
         match con.json_set(key, "$", &json).await {
-            Ok::<String, _>(_ok) => {
-                Ok(oda_sdk_tmf634::CreateResourceSpecificationResponse::Created(entity))
+            Ok::<String, _>(result) if result.eq(&ok) => {
+                Ok(CreateResourceSpecificationResponse::Created(entity))
             },
-            Err(error) => {
-                let msg = format!("error in redis command: {:?}", error);
-                Err(ApiError(msg))
+            Ok::<String, _>(result) => {
+                let code = String::from("500");
+                let reason = String::from("Unexpected result");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("unsuccessful redis command: {:?}", result);
+                error.message = Some(message);
+                Ok(CreateResourceSpecificationResponse::InternalServerError(error))
+            },
+            Err(result) => {
+                let code = String::from("500");
+                let reason = String::from("Unexpected result");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("error on redis command: {:?}", result);
+                error.message = Some(message);
+                Ok(CreateResourceSpecificationResponse::InternalServerError(error))
             },
         }
     }
@@ -660,15 +681,21 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                 let error = models::Error::new(code, reason);
                 Ok(DeleteResourceSpecificationResponse::NotFound(error))
             },
-            Ok::<i32, _>(n) => {
+            Ok::<i32, _>(result) => {
                 let code = String::from("500");
                 let reason = String::from("Unexpected result");
-                let error = models::Error::new(code, reason);
+                let mut error = models::Error::new(code, reason);
+                let message = format!("unsuccessful redis command: {:?}", result);
+                error.message = Some(message);
                 Ok(DeleteResourceSpecificationResponse::InternalServerError(error))
             },
-            Err(error) => {
-                let msg = format!("error in redis command: {:?}", error);
-                Err(ApiError(msg))
+            Err(result) => {
+                let code = String::from("500");
+                let reason = String::from("Unexpected result");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("error on redis command: {:?}", result);
+                error.message = Some(message);
+                Ok(DeleteResourceSpecificationResponse::InternalServerError(error))
             },
         }
     }
@@ -707,26 +734,54 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         let key = format!("resourceSpecification:{}", id);
         let mut con = self.redis_connection.clone();
         let json = match con.json_get(key, "$").await {
-            Ok::<Vec<String>, _>(v) => v[0].to_string(),
-            Err(error) => {
-                let msg = format!("error in redis command: {:?}", error);
-                return Err(ApiError(msg));
+            Ok::<Vec<String>, _>(v) if v.len() == 1 => v[0].to_string(),
+            Ok::<Vec<String>, _>(v) if v.len() == 0 => {
+                let code = String::from("404");
+                let reason = String::from("No such id exists");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("unsuccessful redis command: {:?}", v);
+                error.message = Some(message);
+                return Ok(RetrieveResourceSpecificationResponse::NotFound(error))
+            },
+            Ok::<Vec<String>, _>(result) => {
+                let code = String::from("500");
+                let reason = String::from("Unexpected result");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("unsuccessful redis command: {:?}", result);
+                error.message = Some(message);
+                return Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
+            },
+            Err(result) => {
+                let code = String::from("500");
+                let reason = String::from("Unexpected result");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("error on redis command: {:?}", result);
+                error.message = Some(message);
+                return Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
             },
         };
         let root = match serde_json::from_str::<Vec<String>>(&json) {
             Ok(v) => v[0].to_string(),
-            Err(error) => {
-                let msg = format!("error decoding json: {:?}", error);
-                return Err(ApiError(msg));
+            Err(result) => {
+                let code = String::from("500");
+                let reason = String::from("Unexpected result");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("error decoding json: {:?}", result);
+                error.message = Some(message);
+                return Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
             }
         };
         match serde_json::from_str::<models::ResourceSpecification>(&root) {
             Ok(entity) => {
-                Ok(oda_sdk_tmf634::RetrieveResourceSpecificationResponse::Success(entity))
+                Ok(RetrieveResourceSpecificationResponse::Success(entity))
             },
-            Err(error) => {
-                let msg = format!("error decoding json: {:?}", error);
-                Err(ApiError(msg))
+            Err(result) => {
+                let code = String::from("500");
+                let reason = String::from("Unexpected result");
+                let mut error = models::Error::new(code, reason);
+                let message = format!("error decoding json: {:?}", result);
+                error.message = Some(message);
+                Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
             }
         }
     }

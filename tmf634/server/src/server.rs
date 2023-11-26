@@ -608,7 +608,6 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         let uuid = Uuid::now_v7().hyphenated().to_string();
         let location = format!("/tmf-api/resourceCatalog/v4/{}", uuid);
         let mut con = self.redis_connection.clone();
-        let key = format!("resourceSpecification:{}", uuid);
         let json = match serde_json::to_value(&resource_specification) {
             Ok(mut v) => {
                 v["id"] = json!(uuid);
@@ -639,7 +638,7 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
             },
         };
         let ok = String::from("OK");
-        match con.json_set(key, "$", &json).await {
+        match con.json_set(uuid, "$", &json).await {
             Ok::<String, _>(result) if result.eq(&ok) => {
                 Ok(CreateResourceSpecificationResponse::Created(entity))
             },
@@ -669,9 +668,8 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         context: &C) -> Result<DeleteResourceSpecificationResponse, ApiError>
     {
         info!("delete_resource_specification(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
-        let key = format!("resourceSpecification:{}", id);
         let mut con = self.redis_connection.clone();
-        match con.json_del(key, "$").await {
+        match con.json_del(id, "$").await {
             Ok::<i32, _>(1) => {
                 Ok(DeleteResourceSpecificationResponse::Deleted)
             },
@@ -731,9 +729,8 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         context: &C) -> Result<RetrieveResourceSpecificationResponse, ApiError>
     {
         info!("retrieve_resource_specification(\"{}\", {:?}) - X-Span-ID: {:?}", id, fields, context.get().0.clone());
-        let key = format!("resourceSpecification:{}", id);
         let mut con = self.redis_connection.clone();
-        let json = match con.json_get(key, "$").await {
+        let json = match con.json_get(id, "$").await {
             Ok::<Vec<String>, _>(v) if v.len() == 1 => v[0].to_string(),
             Ok::<Vec<String>, _>(v) if v.len() == 0 => {
                 let code = String::from("404");

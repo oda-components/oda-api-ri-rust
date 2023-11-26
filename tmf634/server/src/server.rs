@@ -648,7 +648,29 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         context: &C) -> Result<DeleteResourceSpecificationResponse, ApiError>
     {
         info!("delete_resource_specification(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
-        Err(ApiError("Generic failure".into()))
+        let key = format!("resourceSpecification:{}", id);
+        let mut con = self.redis_connection.clone();
+        match con.json_del(key, "$").await {
+            Ok::<i32, _>(1) => {
+                Ok(DeleteResourceSpecificationResponse::Deleted)
+            },
+            Ok::<i32, _>(0) => {
+                let code = String::from("404");
+                let reason = String::from("No such id exists");
+                let error = models::Error::new(code, reason);
+                Ok(DeleteResourceSpecificationResponse::NotFound(error))
+            },
+            Ok::<i32, _>(n) => {
+                let code = String::from("500");
+                let reason = String::from("Unexpected result");
+                let error = models::Error::new(code, reason);
+                Ok(DeleteResourceSpecificationResponse::InternalServerError(error))
+            },
+            Err(error) => {
+                let msg = format!("error in redis command: {:?}", error);
+                Err(ApiError(msg))
+            },
+        }
     }
 
     /// List or find ResourceSpecification objects

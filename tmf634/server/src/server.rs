@@ -616,7 +616,6 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                 if v.get("@type").is_none() {
                     v["@type"] = json!("ResourceSpecification");
                 }
-info!("v: {:?}", v);
                 v.to_string()
             },
             Err(result) => {
@@ -639,9 +638,8 @@ info!("v: {:?}", v);
                 return Ok(CreateResourceSpecificationResponse::BadRequest(error))
             },
         };
-info!("entity: {:?}", entity);
         let ok = String::from("OK");
-        match con.json_set(key, "$", &entity).await {
+        match con.json_set(key, "$", &json).await {
             Ok::<String, _>(result) if result.eq(&ok) => {
                 Ok(CreateResourceSpecificationResponse::Created(entity))
             },

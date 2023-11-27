@@ -709,70 +709,77 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         info!("list_resource_specification({:?}, {:?}, {:?}) - X-Span-ID: {:?}", fields, offset, limit, context.get().0.clone());
         let mut con = self.redis_connection.clone();
         let mut cmd = redis::cmd("FT.SEARCH");
-        match cmd.arg("resourceSpecification").arg("*").query_async(&mut con).await {
-            Ok(redis::Value::Bulk(v)) => {
-                let count = match v[0] {
-                    redis::Value::Int(n) => n as i32,
-                    _ => {
+        cmd.arg("resourceSpecification").arg("*");
+        match (offset, limit) {
+            (None, None) => &cmd,
+            (Some(a), None) => cmd.arg("LIMIT").arg(a).arg("10"),
+            (Some(a), Some(b)) => cmd.arg("LIMIT").arg(a).arg(b),
+            (None, Some(b)) => cmd.arg("LIMIT").arg("0").arg(b),
+        };
+        match cmd.query_async(&mut con).await {
+            Ok(redis::Value::Bulk(v)) if v.len() > 0 => {
+                let total = match &v[0] {
+                    redis::Value::Int(n) => *n as i32,
+                    other => {
                         let code = String::from("500");
                         let reason = String::from("Unexpected result");
                         let mut error = models::Error::new(code, reason);
-                        let message = format!("unsuccessful redis command: {:?}", v);
+                        let message = format!("unsuccessful redis command: {:?}", other);
                         error.message = Some(message);
-                        return Ok(ListResourceSpecificationResponse::InternalServerError(error))
-                    }
+                        return Ok(ListResourceSpecificationResponse::InternalServerError(error));
+                    },
                 };
                 let mut body = Vec::new();
-                let mut i: usize = 2;
-                let end: usize = (count * 2).try_into().unwrap();
-                while i <= end {
-                    let pair = match &v[i] {
-                        redis::Value::Bulk(result) => result,
-                        _ => {
+                let mut count = 0;
+                let mut i: usize = 1;
+                while i + 1 <= v.len() {
+                    match &v[i + 1] {
+                        redis::Value::Bulk(pair) if pair.len() == 2 => match &pair[1] {
+                            redis::Value::Data(buf) => {
+                                match serde_json::from_slice::<models::ResourceSpecification>(&buf) {
+                                    Ok(entity) => body.push(entity),
+                                    Err(result) => {
+                                        let code = String::from("500");
+                                        let reason = String::from("Unexpected result");
+                                        let mut error = models::Error::new(code, reason);
+                                        let message = format!("error decoding json: {:?}", result);
+                                        error.message = Some(message);
+                                        return Ok(ListResourceSpecificationResponse::InternalServerError(error));
+                                    },
+                                }
+                            },
+                            other => {
+                                let code = String::from("500");
+                                let reason = String::from("Unexpected result");
+                                let mut error = models::Error::new(code, reason);
+                                let message = format!("unsuccessful redis command: {:?}", other);
+                                error.message = Some(message);
+                                return Ok(ListResourceSpecificationResponse::InternalServerError(error));
+                            },
+                        },
+                        other => {
                             let code = String::from("500");
                             let reason = String::from("Unexpected result");
                             let mut error = models::Error::new(code, reason);
-                            let message = format!("unsuccessful redis command: {:?}", v[i]);
+                            let message = format!("unsuccessful redis command: {:?}", other);
                             error.message = Some(message);
-                            return Ok(ListResourceSpecificationResponse::InternalServerError(error))
+                            return Ok(ListResourceSpecificationResponse::InternalServerError(error));
                         },
                     };
-                    match &pair[1] {
-                        redis::Value::Data(buf) => {
-                            match serde_json::from_slice::<models::ResourceSpecification>(&buf) {
-                                Ok(entity) => body.push(entity),
-                                Err(result) => {
-                                    let code = String::from("500");
-                                    let reason = String::from("Unexpected result");
-                                    let mut error = models::Error::new(code, reason);
-                                    let message = format!("error decoding json: {:?}", result);
-                                    error.message = Some(message);
-                                    return Ok(ListResourceSpecificationResponse::InternalServerError(error))
-                                },
-                            }
-                        },
-                        _ => {
-                            let code = String::from("500");
-                            let reason = String::from("Unexpected result");
-                            let mut error = models::Error::new(code, reason);
-                            let message = format!("unsuccessful redis command: {:?}", pair[i]);
-                            error.message = Some(message);
-                            return Ok(ListResourceSpecificationResponse::InternalServerError(error))
-                        },
-                    };
+                    count += 1;
                     i += 2;
                 };
                 Ok(ListResourceSpecificationResponse::Success {
                     body: body,
-                    x_total_count: None,
+                    x_total_count: Some(total),
                     x_result_count: Some(count)
                 })
             },
-            Ok(result) => {
+            Ok(other) => {
                 let code = String::from("500");
                 let reason = String::from("Unexpected result");
                 let mut error = models::Error::new(code, reason);
-                let message = format!("unsuccessful redis command: {:?}", result);
+                let message = format!("unsuccessful redis command: {:?}", other);
                 error.message = Some(message);
                 Ok(ListResourceSpecificationResponse::InternalServerError(error))
             },

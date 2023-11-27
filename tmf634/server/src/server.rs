@@ -637,7 +637,7 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
             },
         };
         let ok = String::from("OK");
-        match con.json_set(key, "$", &json).await {
+        match con.json_set(key, "$", &entity).await {
             Ok::<String, _>(result) if result.eq(&ok) => {
                 Ok(CreateResourceSpecificationResponse::Created(entity))
             },

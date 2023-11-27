@@ -709,8 +709,15 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         info!("list_resource_specification({:?}, {:?}, {:?}) - X-Span-ID: {:?}", fields, offset, limit, context.get().0.clone());
         let mut con = self.redis_connection.clone();
         let mut cmd = redis::cmd("FT.SEARCH");
-        match cmd.arg("resourceSpecification").arg("*").query_async(&mut con).await {
-            Ok(redis::Value::Bulk(v)) if v.len() > 1 => {
+        cmd.arg("resourceSpecification").arg("*");
+        match (offset, limit) {
+            (None, None) => &cmd,
+            (Some(a), None) => cmd.arg("LIMIT").arg(a).arg("10"),
+            (Some(a), Some(b)) => cmd.arg("LIMIT").arg(a).arg(b),
+            (None, Some(b)) => cmd.arg("LIMIT").arg("0").arg(b),
+        };
+        match cmd.query_async(&mut con).await {
+            Ok(redis::Value::Bulk(v)) if v.len() > 0 => {
                 let total = match &v[0] {
                     redis::Value::Int(n) => *n as i32,
                     other => {

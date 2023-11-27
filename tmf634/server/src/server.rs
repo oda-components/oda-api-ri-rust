@@ -604,7 +604,7 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     {
         info!("create_resource_specification({:?}) - X-Span-ID: {:?}", resource_specification, context.get().0.clone());
         let uuid = Uuid::now_v7().hyphenated().to_string();
-        let location = format!("/tmf-api/resourceCatalog/v4/{}", uuid);
+        let location = format!("/tmf-api/resourceCatalog/v4/resourceSpecification/{}", uuid);
         let mut con = self.redis_connection.clone();
         let key = format!("resourceSpecification:{}", uuid);
         let json = match serde_json::to_value(&resource_specification) {

@@ -815,15 +815,18 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         info!("retrieve_resource_specification(\"{}\", {:?}) - X-Span-ID: {:?}", id, fields, context.get().0.clone());
         let key = format!("resourceSpecification:{}", id);
         let mut con = self.redis_connection.clone();
-        let json = match con.json_get(key, "$").await {
-            Ok::<Vec<String>, _>(v) if v.len() == 1 => v[0].to_string(),
+        match con.json_get(key, "$").await {
+            Ok::<Vec<String>, _>(v) if v.len() == 1 => {
+                let entity = serde_json::from_str::<Vec<models::ResourceSpecification>>(&v[0].to_string());
+                Ok(RetrieveResourceSpecificationResponse::Success(entity.expect("Failed to retrieve specification").get(0).unwrap().clone()))
+            },
             Ok::<Vec<String>, _>(v) if v.len() == 0 => {
                 let code = String::from("404");
                 let reason = String::from("No such id exists");
                 let mut error = models::Error::new(code, reason);
                 let message = format!("unsuccessful redis command: {:?}", v);
                 error.message = Some(message);
-                return Ok(RetrieveResourceSpecificationResponse::NotFound(error))
+                Ok(RetrieveResourceSpecificationResponse::NotFound(error))
             },
             Ok::<Vec<String>, _>(result) => {
                 let code = String::from("500");
@@ -831,7 +834,7 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                 let mut error = models::Error::new(code, reason);
                 let message = format!("unsuccessful redis command: {:?}", result);
                 error.message = Some(message);
-                return Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
+                Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
             },
             Err(result) => {
                 let code = String::from("500");
@@ -839,32 +842,8 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                 let mut error = models::Error::new(code, reason);
                 let message = format!("error on redis command: {:?}", result);
                 error.message = Some(message);
-                return Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
-            },
-        };
-        let root = match serde_json::from_str::<Vec<String>>(&json) {
-            Ok(v) => v[0].to_string(),
-            Err(result) => {
-                let code = String::from("500");
-                let reason = String::from("Unexpected result");
-                let mut error = models::Error::new(code, reason);
-                let message = format!("error decoding json: {:?}", result);
-                error.message = Some(message);
-                return Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
-            }
-        };
-        match serde_json::from_str::<models::ResourceSpecification>(&root) {
-            Ok(entity) => {
-                Ok(RetrieveResourceSpecificationResponse::Success(entity))
-            },
-            Err(result) => {
-                let code = String::from("500");
-                let reason = String::from("Unexpected result");
-                let mut error = models::Error::new(code, reason);
-                let message = format!("error decoding json: {:?}", result);
-                error.message = Some(message);
                 Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
-            }
+            },
         }
     }
 }

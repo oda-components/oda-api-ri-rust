@@ -817,7 +817,7 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         let mut con = self.redis_connection.clone();
         match con.json_get(key, "$").await {
             Ok::<Vec<String>, _>(v) if v.len() == 1 => {
-                let entity = serde_json::from_str::<Vec<models::ResourceSpecification>>(&v[0].to_string());
+                let entity = serde_json::from_str::<Vec<models::ResourceSpecification>>(&v[0]);
                 Ok(RetrieveResourceSpecificationResponse::Success(entity.expect("Failed to retrieve specification").get(0).unwrap().clone()))
             },
             Ok::<Vec<String>, _>(v) if v.len() == 0 => {

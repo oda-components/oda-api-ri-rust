@@ -6,17 +6,17 @@ use async_trait::async_trait;
 use hyper::server::conn::Http;
 use hyper::service::Service;
 use log::info;
+use redis::aio::MultiplexedConnection as RedisConnection;
+use redis::Client as RedisClient;
+use redis::JsonAsyncCommands;
+use serde_json::json;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
-use swagger::{Has, XSpanIdString};
 use swagger::auth::MakeAllowAllAuthenticator;
 use swagger::EmptyContext;
+use swagger::{Has, XSpanIdString};
 use tokio::net::TcpListener;
-use redis::Client as RedisClient;
-use redis::JsonAsyncCommands;
-use redis::aio::MultiplexedConnection as RedisConnection;
-use serde_json::json;
 use uuid::Uuid;
 
 #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
@@ -26,7 +26,6 @@ use oda_sdk_tmf634::models;
 
 /// Builds an SSL implementation for Simple HTTPS from some hard-coded file names
 pub async fn create(redis_uri: &str, bind: &str, port: &str, https: bool) {
-
     let redis_client = match redis::Client::open(redis_uri) {
         Ok(client) => client,
         Err(error) => panic!("error opening redis: {:?}", error),
@@ -36,7 +35,9 @@ pub async fn create(redis_uri: &str, bind: &str, port: &str, https: bool) {
         Err(error) => panic!("error connecting redis: {:?}", error),
     };
 
-    let addr: SocketAddr = format!("{}:{}", bind, port).parse().expect("Failed to parse bind address");
+    let addr: SocketAddr = format!("{}:{}", bind, port)
+        .parse()
+        .expect("Failed to parse bind address");
 
     let server = Server::new(redis_connection);
 
@@ -55,12 +56,16 @@ pub async fn create(redis_uri: &str, bind: &str, port: &str, https: bool) {
 
         #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
         {
-            let mut ssl = SslAcceptor::mozilla_intermediate_v5(SslMethod::tls()).expect("Failed to create SSL Acceptor");
+            let mut ssl = SslAcceptor::mozilla_intermediate_v5(SslMethod::tls())
+                .expect("Failed to create SSL Acceptor");
 
             // Server authentication
-            ssl.set_private_key_file("tmf634/server/cert/server-key.pem", SslFiletype::PEM).expect("Failed to set private key");
-            ssl.set_certificate_chain_file("tmf634/server/cert/server-chain.pem").expect("Failed to set certificate chain");
-            ssl.check_private_key().expect("Failed to check private key");
+            ssl.set_private_key_file("tmf634/server/cert/server-key.pem", SslFiletype::PEM)
+                .expect("Failed to set private key");
+            ssl.set_certificate_chain_file("tmf634/server/cert/server-chain.pem")
+                .expect("Failed to set certificate chain");
+            ssl.check_private_key()
+                .expect("Failed to check private key");
 
             let tls_acceptor = ssl.build();
             let tcp_listener = TcpListener::bind(&addr).await.unwrap();
@@ -104,77 +109,57 @@ pub struct Server<C> {
 
 impl<C> Server<C> {
     pub fn new(redis_connection: RedisConnection) -> Self {
-        Server{
+        Server {
             marker: PhantomData,
             redis_connection,
         }
     }
 }
 
+use oda_sdk_tmf634::server::context::MakeAddContext;
+use oda_sdk_tmf634::server::MakeService;
 use oda_sdk_tmf634::{
-    Api,
-    RegisterListenerResponse,
-    UnregisterListenerResponse,
-    CreateExportJobResponse,
-    DeleteExportJobResponse,
-    ListExportJobResponse,
-    RetrieveExportJobResponse,
-    CreateImportJobResponse,
-    DeleteImportJobResponse,
-    ListImportJobResponse,
-    RetrieveImportJobResponse,
-    ListenToExportJobCreateEventResponse,
-    ListenToExportJobStateChangeEventResponse,
-    ListenToImportJobCreateEventResponse,
-    ListenToImportJobStateChangeEventResponse,
-    ListenToResourceCandidateChangeEventResponse,
-    ListenToResourceCandidateCreateEventResponse,
-    ListenToResourceCandidateDeleteEventResponse,
-    ListenToResourceCatalogChangeEventResponse,
-    ListenToResourceCatalogCreateEventResponse,
-    ListenToResourceCatalogDeleteEventResponse,
-    ListenToResourceCategoryChangeEventResponse,
-    ListenToResourceCategoryCreateEventResponse,
-    ListenToResourceCategoryDeleteEventResponse,
+    Api, CreateExportJobResponse, CreateImportJobResponse, CreateResourceCandidateResponse,
+    CreateResourceCatalogResponse, CreateResourceCategoryResponse,
+    CreateResourceSpecificationResponse, DeleteExportJobResponse, DeleteImportJobResponse,
+    DeleteResourceCandidateResponse, DeleteResourceCatalogResponse, DeleteResourceCategoryResponse,
+    DeleteResourceSpecificationResponse, ListExportJobResponse, ListImportJobResponse,
+    ListResourceCandidateResponse, ListResourceCatalogResponse, ListResourceCategoryResponse,
+    ListResourceSpecificationResponse, ListenToExportJobCreateEventResponse,
+    ListenToExportJobStateChangeEventResponse, ListenToImportJobCreateEventResponse,
+    ListenToImportJobStateChangeEventResponse, ListenToResourceCandidateChangeEventResponse,
+    ListenToResourceCandidateCreateEventResponse, ListenToResourceCandidateDeleteEventResponse,
+    ListenToResourceCatalogChangeEventResponse, ListenToResourceCatalogCreateEventResponse,
+    ListenToResourceCatalogDeleteEventResponse, ListenToResourceCategoryChangeEventResponse,
+    ListenToResourceCategoryCreateEventResponse, ListenToResourceCategoryDeleteEventResponse,
     ListenToResourceSpecificationChangeEventResponse,
     ListenToResourceSpecificationCreateEventResponse,
-    ListenToResourceSpecificationDeleteEventResponse,
-    CreateResourceCandidateResponse,
-    DeleteResourceCandidateResponse,
-    ListResourceCandidateResponse,
-    PatchResourceCandidateResponse,
-    RetrieveResourceCandidateResponse,
-    CreateResourceCatalogResponse,
-    DeleteResourceCatalogResponse,
-    ListResourceCatalogResponse,
-    PatchResourceCatalogResponse,
-    RetrieveResourceCatalogResponse,
-    CreateResourceCategoryResponse,
-    DeleteResourceCategoryResponse,
-    ListResourceCategoryResponse,
-    PatchResourceCategoryResponse,
-    RetrieveResourceCategoryResponse,
-    CreateResourceSpecificationResponse,
-    DeleteResourceSpecificationResponse,
-    ListResourceSpecificationResponse,
-    PatchResourceSpecificationResponse,
-    RetrieveResourceSpecificationResponse,
+    ListenToResourceSpecificationDeleteEventResponse, PatchResourceCandidateResponse,
+    PatchResourceCatalogResponse, PatchResourceCategoryResponse,
+    PatchResourceSpecificationResponse, RegisterListenerResponse, RetrieveExportJobResponse,
+    RetrieveImportJobResponse, RetrieveResourceCandidateResponse, RetrieveResourceCatalogResponse,
+    RetrieveResourceCategoryResponse, RetrieveResourceSpecificationResponse,
+    UnregisterListenerResponse,
 };
-use oda_sdk_tmf634::server::MakeService;
-use oda_sdk_tmf634::server::context::MakeAddContext;
 use std::error::Error;
 use swagger::ApiError;
 
 #[async_trait]
-impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
+impl<C> Api<C> for Server<C>
+where
+    C: Has<XSpanIdString> + Send + Sync,
 {
     /// Register a listener
     async fn register_listener(
         &self,
         data: models::EventSubscriptionInput,
-        context: &C) -> Result<RegisterListenerResponse, ApiError>
-    {
-        info!("register_listener({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<RegisterListenerResponse, ApiError> {
+        info!(
+            "register_listener({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -182,9 +167,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn unregister_listener(
         &self,
         id: String,
-        context: &C) -> Result<UnregisterListenerResponse, ApiError>
-    {
-        info!("unregister_listener(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
+        context: &C,
+    ) -> Result<UnregisterListenerResponse, ApiError> {
+        info!(
+            "unregister_listener(\"{}\") - X-Span-ID: {:?}",
+            id,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -192,9 +181,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn create_export_job(
         &self,
         export_job: models::ExportJobCreate,
-        context: &C) -> Result<CreateExportJobResponse, ApiError>
-    {
-        info!("create_export_job({:?}) - X-Span-ID: {:?}", export_job, context.get().0.clone());
+        context: &C,
+    ) -> Result<CreateExportJobResponse, ApiError> {
+        info!(
+            "create_export_job({:?}) - X-Span-ID: {:?}",
+            export_job,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -202,9 +195,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn delete_export_job(
         &self,
         id: String,
-        context: &C) -> Result<DeleteExportJobResponse, ApiError>
-    {
-        info!("delete_export_job(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
+        context: &C,
+    ) -> Result<DeleteExportJobResponse, ApiError> {
+        info!(
+            "delete_export_job(\"{}\") - X-Span-ID: {:?}",
+            id,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -214,9 +211,15 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         fields: Option<String>,
         offset: Option<i32>,
         limit: Option<i32>,
-        context: &C) -> Result<ListExportJobResponse, ApiError>
-    {
-        info!("list_export_job({:?}, {:?}, {:?}) - X-Span-ID: {:?}", fields, offset, limit, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListExportJobResponse, ApiError> {
+        info!(
+            "list_export_job({:?}, {:?}, {:?}) - X-Span-ID: {:?}",
+            fields,
+            offset,
+            limit,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -225,9 +228,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         fields: Option<String>,
-        context: &C) -> Result<RetrieveExportJobResponse, ApiError>
-    {
-        info!("retrieve_export_job(\"{}\", {:?}) - X-Span-ID: {:?}", id, fields, context.get().0.clone());
+        context: &C,
+    ) -> Result<RetrieveExportJobResponse, ApiError> {
+        info!(
+            "retrieve_export_job(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            fields,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -235,9 +243,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn create_import_job(
         &self,
         import_job: models::ImportJobCreate,
-        context: &C) -> Result<CreateImportJobResponse, ApiError>
-    {
-        info!("create_import_job({:?}) - X-Span-ID: {:?}", import_job, context.get().0.clone());
+        context: &C,
+    ) -> Result<CreateImportJobResponse, ApiError> {
+        info!(
+            "create_import_job({:?}) - X-Span-ID: {:?}",
+            import_job,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -245,9 +257,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn delete_import_job(
         &self,
         id: String,
-        context: &C) -> Result<DeleteImportJobResponse, ApiError>
-    {
-        info!("delete_import_job(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
+        context: &C,
+    ) -> Result<DeleteImportJobResponse, ApiError> {
+        info!(
+            "delete_import_job(\"{}\") - X-Span-ID: {:?}",
+            id,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -257,9 +273,15 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         fields: Option<String>,
         offset: Option<i32>,
         limit: Option<i32>,
-        context: &C) -> Result<ListImportJobResponse, ApiError>
-    {
-        info!("list_import_job({:?}, {:?}, {:?}) - X-Span-ID: {:?}", fields, offset, limit, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListImportJobResponse, ApiError> {
+        info!(
+            "list_import_job({:?}, {:?}, {:?}) - X-Span-ID: {:?}",
+            fields,
+            offset,
+            limit,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -268,9 +290,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         fields: Option<String>,
-        context: &C) -> Result<RetrieveImportJobResponse, ApiError>
-    {
-        info!("retrieve_import_job(\"{}\", {:?}) - X-Span-ID: {:?}", id, fields, context.get().0.clone());
+        context: &C,
+    ) -> Result<RetrieveImportJobResponse, ApiError> {
+        info!(
+            "retrieve_import_job(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            fields,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -278,9 +305,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_export_job_create_event(
         &self,
         data: models::ExportJobCreateEvent,
-        context: &C) -> Result<ListenToExportJobCreateEventResponse, ApiError>
-    {
-        info!("listen_to_export_job_create_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToExportJobCreateEventResponse, ApiError> {
+        info!(
+            "listen_to_export_job_create_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -288,9 +319,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_export_job_state_change_event(
         &self,
         data: models::ExportJobStateChangeEvent,
-        context: &C) -> Result<ListenToExportJobStateChangeEventResponse, ApiError>
-    {
-        info!("listen_to_export_job_state_change_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToExportJobStateChangeEventResponse, ApiError> {
+        info!(
+            "listen_to_export_job_state_change_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -298,9 +333,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_import_job_create_event(
         &self,
         data: models::ImportJobCreateEvent,
-        context: &C) -> Result<ListenToImportJobCreateEventResponse, ApiError>
-    {
-        info!("listen_to_import_job_create_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToImportJobCreateEventResponse, ApiError> {
+        info!(
+            "listen_to_import_job_create_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -308,9 +347,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_import_job_state_change_event(
         &self,
         data: models::ImportJobStateChangeEvent,
-        context: &C) -> Result<ListenToImportJobStateChangeEventResponse, ApiError>
-    {
-        info!("listen_to_import_job_state_change_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToImportJobStateChangeEventResponse, ApiError> {
+        info!(
+            "listen_to_import_job_state_change_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -318,9 +361,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_candidate_change_event(
         &self,
         data: models::ResourceCandidateChangeEvent,
-        context: &C) -> Result<ListenToResourceCandidateChangeEventResponse, ApiError>
-    {
-        info!("listen_to_resource_candidate_change_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceCandidateChangeEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_candidate_change_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -328,9 +375,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_candidate_create_event(
         &self,
         data: models::ResourceCandidateCreateEvent,
-        context: &C) -> Result<ListenToResourceCandidateCreateEventResponse, ApiError>
-    {
-        info!("listen_to_resource_candidate_create_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceCandidateCreateEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_candidate_create_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -338,9 +389,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_candidate_delete_event(
         &self,
         data: models::ResourceCandidateDeleteEvent,
-        context: &C) -> Result<ListenToResourceCandidateDeleteEventResponse, ApiError>
-    {
-        info!("listen_to_resource_candidate_delete_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceCandidateDeleteEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_candidate_delete_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -348,9 +403,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_catalog_change_event(
         &self,
         data: models::ResourceCatalogChangeEvent,
-        context: &C) -> Result<ListenToResourceCatalogChangeEventResponse, ApiError>
-    {
-        info!("listen_to_resource_catalog_change_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceCatalogChangeEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_catalog_change_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -358,9 +417,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_catalog_create_event(
         &self,
         data: models::ResourceCatalogCreateEvent,
-        context: &C) -> Result<ListenToResourceCatalogCreateEventResponse, ApiError>
-    {
-        info!("listen_to_resource_catalog_create_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceCatalogCreateEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_catalog_create_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -368,9 +431,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_catalog_delete_event(
         &self,
         data: models::ResourceCatalogDeleteEvent,
-        context: &C) -> Result<ListenToResourceCatalogDeleteEventResponse, ApiError>
-    {
-        info!("listen_to_resource_catalog_delete_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceCatalogDeleteEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_catalog_delete_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -378,9 +445,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_category_change_event(
         &self,
         data: models::ResourceCategoryChangeEvent,
-        context: &C) -> Result<ListenToResourceCategoryChangeEventResponse, ApiError>
-    {
-        info!("listen_to_resource_category_change_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceCategoryChangeEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_category_change_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -388,9 +459,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_category_create_event(
         &self,
         data: models::ResourceCategoryCreateEvent,
-        context: &C) -> Result<ListenToResourceCategoryCreateEventResponse, ApiError>
-    {
-        info!("listen_to_resource_category_create_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceCategoryCreateEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_category_create_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -398,9 +473,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_category_delete_event(
         &self,
         data: models::ResourceCategoryDeleteEvent,
-        context: &C) -> Result<ListenToResourceCategoryDeleteEventResponse, ApiError>
-    {
-        info!("listen_to_resource_category_delete_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceCategoryDeleteEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_category_delete_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -408,9 +487,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_specification_change_event(
         &self,
         data: models::ResourceSpecificationChangeEvent,
-        context: &C) -> Result<ListenToResourceSpecificationChangeEventResponse, ApiError>
-    {
-        info!("listen_to_resource_specification_change_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceSpecificationChangeEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_specification_change_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -418,9 +501,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_specification_create_event(
         &self,
         data: models::ResourceSpecificationCreateEvent,
-        context: &C) -> Result<ListenToResourceSpecificationCreateEventResponse, ApiError>
-    {
-        info!("listen_to_resource_specification_create_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceSpecificationCreateEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_specification_create_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -428,9 +515,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_specification_delete_event(
         &self,
         data: models::ResourceSpecificationDeleteEvent,
-        context: &C) -> Result<ListenToResourceSpecificationDeleteEventResponse, ApiError>
-    {
-        info!("listen_to_resource_specification_delete_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceSpecificationDeleteEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_specification_delete_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -438,9 +529,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn create_resource_candidate(
         &self,
         resource_candidate: models::ResourceCandidateCreate,
-        context: &C) -> Result<CreateResourceCandidateResponse, ApiError>
-    {
-        info!("create_resource_candidate({:?}) - X-Span-ID: {:?}", resource_candidate, context.get().0.clone());
+        context: &C,
+    ) -> Result<CreateResourceCandidateResponse, ApiError> {
+        info!(
+            "create_resource_candidate({:?}) - X-Span-ID: {:?}",
+            resource_candidate,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -448,9 +543,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn delete_resource_candidate(
         &self,
         id: String,
-        context: &C) -> Result<DeleteResourceCandidateResponse, ApiError>
-    {
-        info!("delete_resource_candidate(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
+        context: &C,
+    ) -> Result<DeleteResourceCandidateResponse, ApiError> {
+        info!(
+            "delete_resource_candidate(\"{}\") - X-Span-ID: {:?}",
+            id,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -460,9 +559,15 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         fields: Option<String>,
         offset: Option<i32>,
         limit: Option<i32>,
-        context: &C) -> Result<ListResourceCandidateResponse, ApiError>
-    {
-        info!("list_resource_candidate({:?}, {:?}, {:?}) - X-Span-ID: {:?}", fields, offset, limit, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListResourceCandidateResponse, ApiError> {
+        info!(
+            "list_resource_candidate({:?}, {:?}, {:?}) - X-Span-ID: {:?}",
+            fields,
+            offset,
+            limit,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -471,9 +576,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         resource_candidate: models::ResourceCandidateUpdate,
-        context: &C) -> Result<PatchResourceCandidateResponse, ApiError>
-    {
-        info!("patch_resource_candidate(\"{}\", {:?}) - X-Span-ID: {:?}", id, resource_candidate, context.get().0.clone());
+        context: &C,
+    ) -> Result<PatchResourceCandidateResponse, ApiError> {
+        info!(
+            "patch_resource_candidate(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            resource_candidate,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -482,9 +592,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         fields: Option<String>,
-        context: &C) -> Result<RetrieveResourceCandidateResponse, ApiError>
-    {
-        info!("retrieve_resource_candidate(\"{}\", {:?}) - X-Span-ID: {:?}", id, fields, context.get().0.clone());
+        context: &C,
+    ) -> Result<RetrieveResourceCandidateResponse, ApiError> {
+        info!(
+            "retrieve_resource_candidate(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            fields,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -492,9 +607,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn create_resource_catalog(
         &self,
         resource_catalog: models::ResourceCatalogCreate,
-        context: &C) -> Result<CreateResourceCatalogResponse, ApiError>
-    {
-        info!("create_resource_catalog({:?}) - X-Span-ID: {:?}", resource_catalog, context.get().0.clone());
+        context: &C,
+    ) -> Result<CreateResourceCatalogResponse, ApiError> {
+        info!(
+            "create_resource_catalog({:?}) - X-Span-ID: {:?}",
+            resource_catalog,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -502,9 +621,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn delete_resource_catalog(
         &self,
         id: String,
-        context: &C) -> Result<DeleteResourceCatalogResponse, ApiError>
-    {
-        info!("delete_resource_catalog(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
+        context: &C,
+    ) -> Result<DeleteResourceCatalogResponse, ApiError> {
+        info!(
+            "delete_resource_catalog(\"{}\") - X-Span-ID: {:?}",
+            id,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -514,9 +637,15 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         fields: Option<String>,
         offset: Option<i32>,
         limit: Option<i32>,
-        context: &C) -> Result<ListResourceCatalogResponse, ApiError>
-    {
-        info!("list_resource_catalog({:?}, {:?}, {:?}) - X-Span-ID: {:?}", fields, offset, limit, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListResourceCatalogResponse, ApiError> {
+        info!(
+            "list_resource_catalog({:?}, {:?}, {:?}) - X-Span-ID: {:?}",
+            fields,
+            offset,
+            limit,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -525,9 +654,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         resource_catalog: models::ResourceCatalogUpdate,
-        context: &C) -> Result<PatchResourceCatalogResponse, ApiError>
-    {
-        info!("patch_resource_catalog(\"{}\", {:?}) - X-Span-ID: {:?}", id, resource_catalog, context.get().0.clone());
+        context: &C,
+    ) -> Result<PatchResourceCatalogResponse, ApiError> {
+        info!(
+            "patch_resource_catalog(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            resource_catalog,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -536,9 +670,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         fields: Option<String>,
-        context: &C) -> Result<RetrieveResourceCatalogResponse, ApiError>
-    {
-        info!("retrieve_resource_catalog(\"{}\", {:?}) - X-Span-ID: {:?}", id, fields, context.get().0.clone());
+        context: &C,
+    ) -> Result<RetrieveResourceCatalogResponse, ApiError> {
+        info!(
+            "retrieve_resource_catalog(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            fields,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -546,9 +685,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn create_resource_category(
         &self,
         resource_category: models::ResourceCategoryCreate,
-        context: &C) -> Result<CreateResourceCategoryResponse, ApiError>
-    {
-        info!("create_resource_category({:?}) - X-Span-ID: {:?}", resource_category, context.get().0.clone());
+        context: &C,
+    ) -> Result<CreateResourceCategoryResponse, ApiError> {
+        info!(
+            "create_resource_category({:?}) - X-Span-ID: {:?}",
+            resource_category,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -556,9 +699,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn delete_resource_category(
         &self,
         id: String,
-        context: &C) -> Result<DeleteResourceCategoryResponse, ApiError>
-    {
-        info!("delete_resource_category(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
+        context: &C,
+    ) -> Result<DeleteResourceCategoryResponse, ApiError> {
+        info!(
+            "delete_resource_category(\"{}\") - X-Span-ID: {:?}",
+            id,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -568,9 +715,15 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         fields: Option<String>,
         offset: Option<i32>,
         limit: Option<i32>,
-        context: &C) -> Result<ListResourceCategoryResponse, ApiError>
-    {
-        info!("list_resource_category({:?}, {:?}, {:?}) - X-Span-ID: {:?}", fields, offset, limit, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListResourceCategoryResponse, ApiError> {
+        info!(
+            "list_resource_category({:?}, {:?}, {:?}) - X-Span-ID: {:?}",
+            fields,
+            offset,
+            limit,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -579,9 +732,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         resource_category: models::ResourceCategoryUpdate,
-        context: &C) -> Result<PatchResourceCategoryResponse, ApiError>
-    {
-        info!("patch_resource_category(\"{}\", {:?}) - X-Span-ID: {:?}", id, resource_category, context.get().0.clone());
+        context: &C,
+    ) -> Result<PatchResourceCategoryResponse, ApiError> {
+        info!(
+            "patch_resource_category(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            resource_category,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -590,9 +748,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         fields: Option<String>,
-        context: &C) -> Result<RetrieveResourceCategoryResponse, ApiError>
-    {
-        info!("retrieve_resource_category(\"{}\", {:?}) - X-Span-ID: {:?}", id, fields, context.get().0.clone());
+        context: &C,
+    ) -> Result<RetrieveResourceCategoryResponse, ApiError> {
+        info!(
+            "retrieve_resource_category(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            fields,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -600,9 +763,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn create_resource_specification(
         &self,
         resource_specification: models::ResourceSpecificationCreate,
-        context: &C) -> Result<CreateResourceSpecificationResponse, ApiError>
-    {
-        info!("create_resource_specification({:?}) - X-Span-ID: {:?}", resource_specification, context.get().0.clone());
+        context: &C,
+    ) -> Result<CreateResourceSpecificationResponse, ApiError> {
+        info!(
+            "create_resource_specification({:?}) - X-Span-ID: {:?}",
+            resource_specification,
+            context.get().0.clone()
+        );
         let uuid = Uuid::now_v7().hyphenated().to_string();
         let location = format!("/tmf-api/resourceCatalog/v4/resourceSpecification/{}", uuid);
         let mut con = self.redis_connection.clone();
@@ -615,14 +782,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                     v["@type"] = json!("ResourceSpecification");
                 }
                 v.to_string()
-            },
+            }
             Err(result) => {
                 let code = String::from("400");
                 let reason = String::from("Problem with request body");
                 let mut error = models::Error::new(code, reason);
                 let message = format!("error encoding to json: {:?}", result);
                 error.message = Some(message);
-                return Ok(CreateResourceSpecificationResponse::BadRequest(error))
+                return Ok(CreateResourceSpecificationResponse::BadRequest(error));
             }
         };
         let entity = match serde_json::from_str::<models::ResourceSpecification>(&json) {
@@ -633,30 +800,34 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                 let mut error = models::Error::new(code, reason);
                 let message = format!("error decoding to json: {:?}", result);
                 error.message = Some(message);
-                return Ok(CreateResourceSpecificationResponse::BadRequest(error))
-            },
+                return Ok(CreateResourceSpecificationResponse::BadRequest(error));
+            }
         };
         let ok = String::from("OK");
         match con.json_set(key, "$", &entity).await {
             Ok::<String, _>(result) if result.eq(&ok) => {
                 Ok(CreateResourceSpecificationResponse::Created(entity))
-            },
+            }
             Ok::<String, _>(result) => {
                 let code = String::from("500");
                 let reason = String::from("Unexpected result");
                 let mut error = models::Error::new(code, reason);
                 let message = format!("unsuccessful redis command: {:?}", result);
                 error.message = Some(message);
-                Ok(CreateResourceSpecificationResponse::InternalServerError(error))
-            },
+                Ok(CreateResourceSpecificationResponse::InternalServerError(
+                    error,
+                ))
+            }
             Err(result) => {
                 let code = String::from("500");
                 let reason = String::from("Unexpected result");
                 let mut error = models::Error::new(code, reason);
                 let message = format!("error on redis command: {:?}", result);
                 error.message = Some(message);
-                Ok(CreateResourceSpecificationResponse::InternalServerError(error))
-            },
+                Ok(CreateResourceSpecificationResponse::InternalServerError(
+                    error,
+                ))
+            }
         }
     }
 
@@ -664,37 +835,43 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn delete_resource_specification(
         &self,
         id: String,
-        context: &C) -> Result<DeleteResourceSpecificationResponse, ApiError>
-    {
-        info!("delete_resource_specification(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
+        context: &C,
+    ) -> Result<DeleteResourceSpecificationResponse, ApiError> {
+        info!(
+            "delete_resource_specification(\"{}\") - X-Span-ID: {:?}",
+            id,
+            context.get().0.clone()
+        );
         let key = format!("resourceSpecification:{}", id);
         let mut con = self.redis_connection.clone();
         match con.json_del(key, "$").await {
-            Ok::<i32, _>(1) => {
-                Ok(DeleteResourceSpecificationResponse::Deleted)
-            },
+            Ok::<i32, _>(1) => Ok(DeleteResourceSpecificationResponse::Deleted),
             Ok::<i32, _>(0) => {
                 let code = String::from("404");
                 let reason = String::from("No such id exists");
                 let error = models::Error::new(code, reason);
                 Ok(DeleteResourceSpecificationResponse::NotFound(error))
-            },
+            }
             Ok::<i32, _>(result) => {
                 let code = String::from("500");
                 let reason = String::from("Unexpected result");
                 let mut error = models::Error::new(code, reason);
                 let message = format!("unsuccessful redis command: {:?}", result);
                 error.message = Some(message);
-                Ok(DeleteResourceSpecificationResponse::InternalServerError(error))
-            },
+                Ok(DeleteResourceSpecificationResponse::InternalServerError(
+                    error,
+                ))
+            }
             Err(result) => {
                 let code = String::from("500");
                 let reason = String::from("Unexpected result");
                 let mut error = models::Error::new(code, reason);
                 let message = format!("error on redis command: {:?}", result);
                 error.message = Some(message);
-                Ok(DeleteResourceSpecificationResponse::InternalServerError(error))
-            },
+                Ok(DeleteResourceSpecificationResponse::InternalServerError(
+                    error,
+                ))
+            }
         }
     }
 
@@ -704,9 +881,15 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         fields: Option<String>,
         offset: Option<i32>,
         limit: Option<i32>,
-        context: &C) -> Result<ListResourceSpecificationResponse, ApiError>
-    {
-        info!("list_resource_specification({:?}, {:?}, {:?}) - X-Span-ID: {:?}", fields, offset, limit, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListResourceSpecificationResponse, ApiError> {
+        info!(
+            "list_resource_specification({:?}, {:?}, {:?}) - X-Span-ID: {:?}",
+            fields,
+            offset,
+            limit,
+            context.get().0.clone()
+        );
         let mut con = self.redis_connection.clone();
         let mut cmd = redis::cmd("FT.SEARCH");
         cmd.arg("resourceSpecification").arg("*");
@@ -726,8 +909,10 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                         let mut error = models::Error::new(code, reason);
                         let message = format!("unsuccessful redis command: {:?}", other);
                         error.message = Some(message);
-                        return Ok(ListResourceSpecificationResponse::InternalServerError(error));
-                    },
+                        return Ok(ListResourceSpecificationResponse::InternalServerError(
+                            error,
+                        ));
+                    }
                 };
                 let mut body = Vec::new();
                 let mut count = 0;
@@ -736,7 +921,8 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                     match &v[i + 1] {
                         redis::Value::Bulk(pair) if pair.len() == 2 => match &pair[1] {
                             redis::Value::Data(buf) => {
-                                match serde_json::from_slice::<models::ResourceSpecification>(&buf) {
+                                match serde_json::from_slice::<models::ResourceSpecification>(&buf)
+                                {
                                     Ok(entity) => body.push(entity),
                                     Err(result) => {
                                         let code = String::from("500");
@@ -744,18 +930,24 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                                         let mut error = models::Error::new(code, reason);
                                         let message = format!("error decoding json: {:?}", result);
                                         error.message = Some(message);
-                                        return Ok(ListResourceSpecificationResponse::InternalServerError(error));
-                                    },
+                                        return Ok(
+                                            ListResourceSpecificationResponse::InternalServerError(
+                                                error,
+                                            ),
+                                        );
+                                    }
                                 }
-                            },
+                            }
                             other => {
                                 let code = String::from("500");
                                 let reason = String::from("Unexpected result");
                                 let mut error = models::Error::new(code, reason);
                                 let message = format!("unsuccessful redis command: {:?}", other);
                                 error.message = Some(message);
-                                return Ok(ListResourceSpecificationResponse::InternalServerError(error));
-                            },
+                                return Ok(ListResourceSpecificationResponse::InternalServerError(
+                                    error,
+                                ));
+                            }
                         },
                         other => {
                             let code = String::from("500");
@@ -763,34 +955,40 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                             let mut error = models::Error::new(code, reason);
                             let message = format!("unsuccessful redis command: {:?}", other);
                             error.message = Some(message);
-                            return Ok(ListResourceSpecificationResponse::InternalServerError(error));
-                        },
+                            return Ok(ListResourceSpecificationResponse::InternalServerError(
+                                error,
+                            ));
+                        }
                     };
                     count += 1;
                     i += 2;
-                };
+                }
                 Ok(ListResourceSpecificationResponse::Success {
                     body: body,
                     x_total_count: Some(total),
-                    x_result_count: Some(count)
+                    x_result_count: Some(count),
                 })
-            },
+            }
             Ok(other) => {
                 let code = String::from("500");
                 let reason = String::from("Unexpected result");
                 let mut error = models::Error::new(code, reason);
                 let message = format!("unsuccessful redis command: {:?}", other);
                 error.message = Some(message);
-                Ok(ListResourceSpecificationResponse::InternalServerError(error))
-            },
+                Ok(ListResourceSpecificationResponse::InternalServerError(
+                    error,
+                ))
+            }
             Err(result) => {
                 let code = String::from("500");
                 let reason = String::from("Unexpected result");
                 let mut error = models::Error::new(code, reason);
                 let message = format!("error on redis command: {:?}", result);
                 error.message = Some(message);
-                Ok(ListResourceSpecificationResponse::InternalServerError(error))
-            },
+                Ok(ListResourceSpecificationResponse::InternalServerError(
+                    error,
+                ))
+            }
         }
     }
 
@@ -799,9 +997,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         resource_specification: models::ResourceSpecificationUpdate,
-        context: &C) -> Result<PatchResourceSpecificationResponse, ApiError>
-    {
-        info!("patch_resource_specification(\"{}\", {:?}) - X-Span-ID: {:?}", id, resource_specification, context.get().0.clone());
+        context: &C,
+    ) -> Result<PatchResourceSpecificationResponse, ApiError> {
+        info!(
+            "patch_resource_specification(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            resource_specification,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -810,16 +1013,27 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         fields: Option<String>,
-        context: &C) -> Result<RetrieveResourceSpecificationResponse, ApiError>
-    {
-        info!("retrieve_resource_specification(\"{}\", {:?}) - X-Span-ID: {:?}", id, fields, context.get().0.clone());
+        context: &C,
+    ) -> Result<RetrieveResourceSpecificationResponse, ApiError> {
+        info!(
+            "retrieve_resource_specification(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            fields,
+            context.get().0.clone()
+        );
         let key = format!("resourceSpecification:{}", id);
         let mut con = self.redis_connection.clone();
         match con.json_get(key, "$").await {
             Ok::<Vec<String>, _>(v) if v.len() == 1 => {
                 let entity = serde_json::from_str::<Vec<models::ResourceSpecification>>(&v[0]);
-                Ok(RetrieveResourceSpecificationResponse::Success(entity.expect("Failed to retrieve specification").get(0).unwrap().clone()))
-            },
+                Ok(RetrieveResourceSpecificationResponse::Success(
+                    entity
+                        .expect("Failed to retrieve specification")
+                        .get(0)
+                        .unwrap()
+                        .clone(),
+                ))
+            }
             Ok::<Vec<String>, _>(v) if v.len() == 0 => {
                 let code = String::from("404");
                 let reason = String::from("No such id exists");
@@ -827,23 +1041,27 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
                 let message = format!("unsuccessful redis command: {:?}", v);
                 error.message = Some(message);
                 Ok(RetrieveResourceSpecificationResponse::NotFound(error))
-            },
+            }
             Ok::<Vec<String>, _>(result) => {
                 let code = String::from("500");
                 let reason = String::from("Unexpected result");
                 let mut error = models::Error::new(code, reason);
                 let message = format!("unsuccessful redis command: {:?}", result);
                 error.message = Some(message);
-                Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
-            },
+                Ok(RetrieveResourceSpecificationResponse::InternalServerError(
+                    error,
+                ))
+            }
             Err(result) => {
                 let code = String::from("500");
                 let reason = String::from("Unexpected result");
                 let mut error = models::Error::new(code, reason);
                 let message = format!("error on redis command: {:?}", result);
                 error.message = Some(message);
-                Ok(RetrieveResourceSpecificationResponse::InternalServerError(error))
-            },
+                Ok(RetrieveResourceSpecificationResponse::InternalServerError(
+                    error,
+                ))
+            }
         }
     }
 }

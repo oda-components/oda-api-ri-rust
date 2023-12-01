@@ -13,24 +13,32 @@ async fn main() {
     env_logger::init();
 
     let matches = App::new("server")
-        .arg(Arg::with_name("https")
-            .long("https")
-            .help("Whether to use HTTPS or not"))
-        .arg(Arg::with_name("redis")
-            .long("redis")
-            .value_name("URI")
-            .takes_value(true)
-            .help("Redis server URI"))
-        .arg(Arg::with_name("port")
-            .long("port")
-            .value_name("port")
-            .takes_value(true)
-            .help("Port number to listen on"))
-        .arg(Arg::with_name("interface")
-            .long("interface")
-            .value_name("address")
-            .takes_value(true)
-            .help("Address of local interface to bind"))
+        .arg(
+            Arg::with_name("https")
+                .long("https")
+                .help("Whether to use HTTPS or not"),
+        )
+        .arg(
+            Arg::with_name("redis")
+                .long("redis")
+                .value_name("URI")
+                .takes_value(true)
+                .help("Redis server URI"),
+        )
+        .arg(
+            Arg::with_name("port")
+                .long("port")
+                .value_name("port")
+                .takes_value(true)
+                .help("Port number to listen on"),
+        )
+        .arg(
+            Arg::with_name("interface")
+                .long("interface")
+                .value_name("address")
+                .takes_value(true)
+                .help("Address of local interface to bind"),
+        )
         .get_matches();
 
     let bind = matches.value_of("address").unwrap_or("0.0.0.0");

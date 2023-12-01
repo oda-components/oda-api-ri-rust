@@ -1,58 +1,32 @@
 #![allow(missing_docs, unused_variables, trivial_casts)]
 
-
-#[allow(unused_imports)]
-use futures::{future, Stream, stream};
-#[allow(unused_imports)]
-use oda_sdk_tmf634::{Api, ApiNoContext, Client, ContextWrapperExt, models,
-                      RegisterListenerResponse,
-                      UnregisterListenerResponse,
-                      CreateExportJobResponse,
-                      DeleteExportJobResponse,
-                      ListExportJobResponse,
-                      RetrieveExportJobResponse,
-                      CreateImportJobResponse,
-                      DeleteImportJobResponse,
-                      ListImportJobResponse,
-                      RetrieveImportJobResponse,
-                      ListenToExportJobCreateEventResponse,
-                      ListenToExportJobStateChangeEventResponse,
-                      ListenToImportJobCreateEventResponse,
-                      ListenToImportJobStateChangeEventResponse,
-                      ListenToResourceCandidateChangeEventResponse,
-                      ListenToResourceCandidateCreateEventResponse,
-                      ListenToResourceCandidateDeleteEventResponse,
-                      ListenToResourceCatalogChangeEventResponse,
-                      ListenToResourceCatalogCreateEventResponse,
-                      ListenToResourceCatalogDeleteEventResponse,
-                      ListenToResourceCategoryChangeEventResponse,
-                      ListenToResourceCategoryCreateEventResponse,
-                      ListenToResourceCategoryDeleteEventResponse,
-                      ListenToResourceSpecificationChangeEventResponse,
-                      ListenToResourceSpecificationCreateEventResponse,
-                      ListenToResourceSpecificationDeleteEventResponse,
-                      CreateResourceCandidateResponse,
-                      DeleteResourceCandidateResponse,
-                      ListResourceCandidateResponse,
-                      PatchResourceCandidateResponse,
-                      RetrieveResourceCandidateResponse,
-                      CreateResourceCatalogResponse,
-                      DeleteResourceCatalogResponse,
-                      ListResourceCatalogResponse,
-                      PatchResourceCatalogResponse,
-                      RetrieveResourceCatalogResponse,
-                      CreateResourceCategoryResponse,
-                      DeleteResourceCategoryResponse,
-                      ListResourceCategoryResponse,
-                      PatchResourceCategoryResponse,
-                      RetrieveResourceCategoryResponse,
-                      CreateResourceSpecificationResponse,
-                      DeleteResourceSpecificationResponse,
-                      ListResourceSpecificationResponse,
-                      PatchResourceSpecificationResponse,
-                      RetrieveResourceSpecificationResponse,
-                     };
 use clap::{App, Arg};
+#[allow(unused_imports)]
+use futures::{future, stream, Stream};
+#[allow(unused_imports)]
+use oda_sdk_tmf634::{
+    models, Api, ApiNoContext, Client, ContextWrapperExt, CreateExportJobResponse,
+    CreateImportJobResponse, CreateResourceCandidateResponse, CreateResourceCatalogResponse,
+    CreateResourceCategoryResponse, CreateResourceSpecificationResponse, DeleteExportJobResponse,
+    DeleteImportJobResponse, DeleteResourceCandidateResponse, DeleteResourceCatalogResponse,
+    DeleteResourceCategoryResponse, DeleteResourceSpecificationResponse, ListExportJobResponse,
+    ListImportJobResponse, ListResourceCandidateResponse, ListResourceCatalogResponse,
+    ListResourceCategoryResponse, ListResourceSpecificationResponse,
+    ListenToExportJobCreateEventResponse, ListenToExportJobStateChangeEventResponse,
+    ListenToImportJobCreateEventResponse, ListenToImportJobStateChangeEventResponse,
+    ListenToResourceCandidateChangeEventResponse, ListenToResourceCandidateCreateEventResponse,
+    ListenToResourceCandidateDeleteEventResponse, ListenToResourceCatalogChangeEventResponse,
+    ListenToResourceCatalogCreateEventResponse, ListenToResourceCatalogDeleteEventResponse,
+    ListenToResourceCategoryChangeEventResponse, ListenToResourceCategoryCreateEventResponse,
+    ListenToResourceCategoryDeleteEventResponse, ListenToResourceSpecificationChangeEventResponse,
+    ListenToResourceSpecificationCreateEventResponse,
+    ListenToResourceSpecificationDeleteEventResponse, PatchResourceCandidateResponse,
+    PatchResourceCatalogResponse, PatchResourceCategoryResponse,
+    PatchResourceSpecificationResponse, RegisterListenerResponse, RetrieveExportJobResponse,
+    RetrieveImportJobResponse, RetrieveResourceCandidateResponse, RetrieveResourceCatalogResponse,
+    RetrieveResourceCategoryResponse, RetrieveResourceSpecificationResponse,
+    UnregisterListenerResponse,
+};
 
 #[allow(unused_imports)]
 use log::info;
@@ -61,7 +35,12 @@ use log::info;
 #[allow(unused_imports)]
 use swagger::{AuthData, ContextBuilder, EmptyContext, Has, Push, XSpanIdString};
 
-type ClientContext = swagger::make_context_ty!(ContextBuilder, EmptyContext, Option<AuthData>, XSpanIdString);
+type ClientContext = swagger::make_context_ty!(
+    ContextBuilder,
+    EmptyContext,
+    Option<AuthData>,
+    XSpanIdString
+);
 
 // rt may be unused if there are no examples
 #[allow(unused_mut)]
@@ -69,65 +48,78 @@ fn main() {
     env_logger::init();
 
     let matches = App::new("client")
-        .arg(Arg::with_name("operation")
-            .help("Sets the operation to run")
-            .possible_values(&[
-                "UnregisterListener",
-                "DeleteExportJob",
-                "ListExportJob",
-                "RetrieveExportJob",
-                "DeleteImportJob",
-                "ListImportJob",
-                "RetrieveImportJob",
-                "DeleteResourceCandidate",
-                "ListResourceCandidate",
-                "RetrieveResourceCandidate",
-                "DeleteResourceCatalog",
-                "ListResourceCatalog",
-                "RetrieveResourceCatalog",
-                "DeleteResourceCategory",
-                "ListResourceCategory",
-                "RetrieveResourceCategory",
-                "DeleteResourceSpecification",
-                "ListResourceSpecification",
-                "RetrieveResourceSpecification",
-            ])
-            .required(true)
-            .index(1))
-        .arg(Arg::with_name("https")
-            .long("https")
-            .help("Whether to use HTTPS or not"))
-        .arg(Arg::with_name("host")
-            .long("host")
-            .takes_value(true)
-            .default_value("serverRoot")
-            .help("Hostname to contact"))
-        .arg(Arg::with_name("port")
-            .long("port")
-            .takes_value(true)
-            .default_value("8080")
-            .help("Port to contact"))
+        .arg(
+            Arg::with_name("operation")
+                .help("Sets the operation to run")
+                .possible_values(&[
+                    "UnregisterListener",
+                    "DeleteExportJob",
+                    "ListExportJob",
+                    "RetrieveExportJob",
+                    "DeleteImportJob",
+                    "ListImportJob",
+                    "RetrieveImportJob",
+                    "DeleteResourceCandidate",
+                    "ListResourceCandidate",
+                    "RetrieveResourceCandidate",
+                    "DeleteResourceCatalog",
+                    "ListResourceCatalog",
+                    "RetrieveResourceCatalog",
+                    "DeleteResourceCategory",
+                    "ListResourceCategory",
+                    "RetrieveResourceCategory",
+                    "DeleteResourceSpecification",
+                    "ListResourceSpecification",
+                    "RetrieveResourceSpecification",
+                ])
+                .required(true)
+                .index(1),
+        )
+        .arg(
+            Arg::with_name("https")
+                .long("https")
+                .help("Whether to use HTTPS or not"),
+        )
+        .arg(
+            Arg::with_name("host")
+                .long("host")
+                .takes_value(true)
+                .default_value("serverRoot")
+                .help("Hostname to contact"),
+        )
+        .arg(
+            Arg::with_name("port")
+                .long("port")
+                .takes_value(true)
+                .default_value("8080")
+                .help("Port to contact"),
+        )
         .get_matches();
 
     let is_https = matches.is_present("https");
-    let base_url = format!("{}://{}:{}",
-                           if is_https { "https" } else { "http" },
-                           matches.value_of("host").unwrap(),
-                           matches.value_of("port").unwrap());
+    let base_url = format!(
+        "{}://{}:{}",
+        if is_https { "https" } else { "http" },
+        matches.value_of("host").unwrap(),
+        matches.value_of("port").unwrap()
+    );
 
-    let context: ClientContext =
-        swagger::make_context!(ContextBuilder, EmptyContext, None as Option<AuthData>, XSpanIdString::default());
+    let context: ClientContext = swagger::make_context!(
+        ContextBuilder,
+        EmptyContext,
+        None as Option<AuthData>,
+        XSpanIdString::default()
+    );
 
-    let mut client : Box<dyn ApiNoContext<ClientContext>> = if matches.is_present("https") {
+    let mut client: Box<dyn ApiNoContext<ClientContext>> = if matches.is_present("https") {
         // Using Simple HTTPS
-        let client = Box::new(Client::try_new_https(&base_url)
-            .expect("Failed to create HTTPS client"));
+        let client =
+            Box::new(Client::try_new_https(&base_url).expect("Failed to create HTTPS client"));
         Box::new(client.with_context(context))
     } else {
         // Using HTTP
-        let client = Box::new(Client::try_new_http(
-            &base_url)
-            .expect("Failed to create HTTP client"));
+        let client =
+            Box::new(Client::try_new_http(&base_url).expect("Failed to create HTTP client"));
         Box::new(client.with_context(context))
     };
 
@@ -143,11 +135,13 @@ fn main() {
         },
         */
         Some("UnregisterListener") => {
-            let result = rt.block_on(client.unregister_listener(
-                  "id_example".to_string()
-            ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            let result = rt.block_on(client.unregister_listener("id_example".to_string()));
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         /* Disabled because there's no example.
         Some("CreateExportJob") => {
             let result = rt.block_on(client.create_export_job(
@@ -157,26 +151,37 @@ fn main() {
         },
         */
         Some("DeleteExportJob") => {
-            let result = rt.block_on(client.delete_export_job(
-                  "id_example".to_string()
-            ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            let result = rt.block_on(client.delete_export_job("id_example".to_string()));
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         Some("ListExportJob") => {
             let result = rt.block_on(client.list_export_job(
-                  Some("fields_example".to_string()),
-                  Some(56),
-                  Some(56)
+                Some("fields_example".to_string()),
+                Some(56),
+                Some(56),
             ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         Some("RetrieveExportJob") => {
-            let result = rt.block_on(client.retrieve_export_job(
-                  "id_example".to_string(),
-                  Some("fields_example".to_string())
-            ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            let result =
+                rt.block_on(client.retrieve_export_job(
+                    "id_example".to_string(),
+                    Some("fields_example".to_string()),
+                ));
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         /* Disabled because there's no example.
         Some("CreateImportJob") => {
             let result = rt.block_on(client.create_import_job(
@@ -186,26 +191,37 @@ fn main() {
         },
         */
         Some("DeleteImportJob") => {
-            let result = rt.block_on(client.delete_import_job(
-                  "id_example".to_string()
-            ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            let result = rt.block_on(client.delete_import_job("id_example".to_string()));
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         Some("ListImportJob") => {
             let result = rt.block_on(client.list_import_job(
-                  Some("fields_example".to_string()),
-                  Some(56),
-                  Some(56)
+                Some("fields_example".to_string()),
+                Some(56),
+                Some(56),
             ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         Some("RetrieveImportJob") => {
-            let result = rt.block_on(client.retrieve_import_job(
-                  "id_example".to_string(),
-                  Some("fields_example".to_string())
-            ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            let result =
+                rt.block_on(client.retrieve_import_job(
+                    "id_example".to_string(),
+                    Some("fields_example".to_string()),
+                ));
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         /* Disabled because there's no example.
         Some("ListenToExportJobCreateEvent") => {
             let result = rt.block_on(client.listen_to_export_job_create_event(
@@ -343,19 +359,25 @@ fn main() {
         },
         */
         Some("DeleteResourceCandidate") => {
-            let result = rt.block_on(client.delete_resource_candidate(
-                  "id_example".to_string()
-            ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            let result = rt.block_on(client.delete_resource_candidate("id_example".to_string()));
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         Some("ListResourceCandidate") => {
             let result = rt.block_on(client.list_resource_candidate(
-                  Some("fields_example".to_string()),
-                  Some(56),
-                  Some(56)
+                Some("fields_example".to_string()),
+                Some(56),
+                Some(56),
             ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         /* Disabled because there's no example.
         Some("PatchResourceCandidate") => {
             let result = rt.block_on(client.patch_resource_candidate(
@@ -367,11 +389,15 @@ fn main() {
         */
         Some("RetrieveResourceCandidate") => {
             let result = rt.block_on(client.retrieve_resource_candidate(
-                  "id_example".to_string(),
-                  Some("fields_example".to_string())
+                "id_example".to_string(),
+                Some("fields_example".to_string()),
             ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         /* Disabled because there's no example.
         Some("CreateResourceCatalog") => {
             let result = rt.block_on(client.create_resource_catalog(
@@ -381,19 +407,25 @@ fn main() {
         },
         */
         Some("DeleteResourceCatalog") => {
-            let result = rt.block_on(client.delete_resource_catalog(
-                  "id_example".to_string()
-            ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            let result = rt.block_on(client.delete_resource_catalog("id_example".to_string()));
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         Some("ListResourceCatalog") => {
             let result = rt.block_on(client.list_resource_catalog(
-                  Some("fields_example".to_string()),
-                  Some(56),
-                  Some(56)
+                Some("fields_example".to_string()),
+                Some(56),
+                Some(56),
             ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         /* Disabled because there's no example.
         Some("PatchResourceCatalog") => {
             let result = rt.block_on(client.patch_resource_catalog(
@@ -405,11 +437,15 @@ fn main() {
         */
         Some("RetrieveResourceCatalog") => {
             let result = rt.block_on(client.retrieve_resource_catalog(
-                  "id_example".to_string(),
-                  Some("fields_example".to_string())
+                "id_example".to_string(),
+                Some("fields_example".to_string()),
             ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         /* Disabled because there's no example.
         Some("CreateResourceCategory") => {
             let result = rt.block_on(client.create_resource_category(
@@ -419,19 +455,25 @@ fn main() {
         },
         */
         Some("DeleteResourceCategory") => {
-            let result = rt.block_on(client.delete_resource_category(
-                  "id_example".to_string()
-            ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            let result = rt.block_on(client.delete_resource_category("id_example".to_string()));
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         Some("ListResourceCategory") => {
             let result = rt.block_on(client.list_resource_category(
-                  Some("fields_example".to_string()),
-                  Some(56),
-                  Some(56)
+                Some("fields_example".to_string()),
+                Some(56),
+                Some(56),
             ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         /* Disabled because there's no example.
         Some("PatchResourceCategory") => {
             let result = rt.block_on(client.patch_resource_category(
@@ -443,11 +485,15 @@ fn main() {
         */
         Some("RetrieveResourceCategory") => {
             let result = rt.block_on(client.retrieve_resource_category(
-                  "id_example".to_string(),
-                  Some("fields_example".to_string())
+                "id_example".to_string(),
+                Some("fields_example".to_string()),
             ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         /* Disabled because there's no example.
         Some("CreateResourceSpecification") => {
             let result = rt.block_on(client.create_resource_specification(
@@ -457,19 +503,26 @@ fn main() {
         },
         */
         Some("DeleteResourceSpecification") => {
-            let result = rt.block_on(client.delete_resource_specification(
-                  "id_example".to_string()
-            ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            let result =
+                rt.block_on(client.delete_resource_specification("id_example".to_string()));
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         Some("ListResourceSpecification") => {
             let result = rt.block_on(client.list_resource_specification(
-                  Some("fields_example".to_string()),
-                  Some(56),
-                  Some(56)
+                Some("fields_example".to_string()),
+                Some(56),
+                Some(56),
             ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         /* Disabled because there's no example.
         Some("PatchResourceSpecification") => {
             let result = rt.block_on(client.patch_resource_specification(
@@ -481,11 +534,15 @@ fn main() {
         */
         Some("RetrieveResourceSpecification") => {
             let result = rt.block_on(client.retrieve_resource_specification(
-                  "id_example".to_string(),
-                  Some("fields_example".to_string())
+                "id_example".to_string(),
+                Some("fields_example".to_string()),
             ));
-            info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
-        },
+            info!(
+                "{:?} (X-Span-ID: {:?})",
+                result,
+                (client.context() as &dyn Has<XSpanIdString>).get().clone()
+            );
+        }
         _ => {
             panic!("Invalid operation provided")
         }

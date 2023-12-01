@@ -12,9 +12,9 @@ use std::marker::PhantomData;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
-use swagger::{Has, XSpanIdString};
 use swagger::auth::MakeAllowAllAuthenticator;
 use swagger::EmptyContext;
+use swagger::{Has, XSpanIdString};
 use tokio::net::TcpListener;
 
 #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
@@ -34,9 +34,7 @@ pub async fn create(addr: &str, https: bool) {
 
     #[allow(unused_mut)]
     let mut service =
-        oda_sdk_tmf639::server::context::MakeAddContext::<_, EmptyContext>::new(
-            service
-        );
+        oda_sdk_tmf639::server::context::MakeAddContext::<_, EmptyContext>::new(service);
 
     if https {
         #[cfg(any(target_os = "macos", target_os = "windows", target_os = "ios"))]
@@ -46,12 +44,16 @@ pub async fn create(addr: &str, https: bool) {
 
         #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
         {
-            let mut ssl = SslAcceptor::mozilla_intermediate_v5(SslMethod::tls()).expect("Failed to create SSL Acceptor");
+            let mut ssl = SslAcceptor::mozilla_intermediate_v5(SslMethod::tls())
+                .expect("Failed to create SSL Acceptor");
 
             // Server authentication
-            ssl.set_private_key_file("tmf639/server/cert/server-key.pem", SslFiletype::PEM).expect("Failed to set private key");
-            ssl.set_certificate_chain_file("tmf639/server/cert/server-chain.pem").expect("Failed to set certificate chain");
-            ssl.check_private_key().expect("Failed to check private key");
+            ssl.set_private_key_file("tmf639/server/cert/server-key.pem", SslFiletype::PEM)
+                .expect("Failed to set private key");
+            ssl.set_certificate_chain_file("tmf639/server/cert/server-chain.pem")
+                .expect("Failed to set certificate chain");
+            ssl.check_private_key()
+                .expect("Failed to check private key");
 
             let tls_acceptor = ssl.build();
             let tcp_listener = TcpListener::bind(&addr).await.unwrap();
@@ -76,7 +78,10 @@ pub async fn create(addr: &str, https: bool) {
         }
     } else {
         // Using HTTP
-        hyper::server::Server::bind(&addr).serve(service).await.unwrap()
+        hyper::server::Server::bind(&addr)
+            .serve(service)
+            .await
+            .unwrap()
     }
 }
 
@@ -87,39 +92,39 @@ pub struct Server<C> {
 
 impl<C> Server<C> {
     pub fn new() -> Self {
-        Server{marker: PhantomData}
+        Server {
+            marker: PhantomData,
+        }
     }
 }
 
-
-use oda_sdk_tmf639::{
-    Api,
-    RegisterListenerResponse,
-    UnregisterListenerResponse,
-    ListenToResourceAttributeValueChangeEventResponse,
-    ListenToResourceCreateEventResponse,
-    ListenToResourceDeleteEventResponse,
-    ListenToResourceStateChangeEventResponse,
-    CreateResourceResponse,
-    DeleteResourceResponse,
-    ListResourceResponse,
-    PatchResourceResponse,
-    RetrieveResourceResponse,
-};
 use oda_sdk_tmf639::server::MakeService;
+use oda_sdk_tmf639::{
+    Api, CreateResourceResponse, DeleteResourceResponse, ListResourceResponse,
+    ListenToResourceAttributeValueChangeEventResponse, ListenToResourceCreateEventResponse,
+    ListenToResourceDeleteEventResponse, ListenToResourceStateChangeEventResponse,
+    PatchResourceResponse, RegisterListenerResponse, RetrieveResourceResponse,
+    UnregisterListenerResponse,
+};
 use std::error::Error;
 use swagger::ApiError;
 
 #[async_trait]
-impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
+impl<C> Api<C> for Server<C>
+where
+    C: Has<XSpanIdString> + Send + Sync,
 {
     /// Register a listener
     async fn register_listener(
         &self,
         data: models::EventSubscriptionInput,
-        context: &C) -> Result<RegisterListenerResponse, ApiError>
-    {
-        info!("register_listener({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<RegisterListenerResponse, ApiError> {
+        info!(
+            "register_listener({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -127,9 +132,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn unregister_listener(
         &self,
         id: String,
-        context: &C) -> Result<UnregisterListenerResponse, ApiError>
-    {
-        info!("unregister_listener(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
+        context: &C,
+    ) -> Result<UnregisterListenerResponse, ApiError> {
+        info!(
+            "unregister_listener(\"{}\") - X-Span-ID: {:?}",
+            id,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -137,9 +146,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_attribute_value_change_event(
         &self,
         data: models::ResourceAttributeValueChangeEvent,
-        context: &C) -> Result<ListenToResourceAttributeValueChangeEventResponse, ApiError>
-    {
-        info!("listen_to_resource_attribute_value_change_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceAttributeValueChangeEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_attribute_value_change_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -147,9 +160,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_create_event(
         &self,
         data: models::ResourceCreateEvent,
-        context: &C) -> Result<ListenToResourceCreateEventResponse, ApiError>
-    {
-        info!("listen_to_resource_create_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceCreateEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_create_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -157,9 +174,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_delete_event(
         &self,
         data: models::ResourceDeleteEvent,
-        context: &C) -> Result<ListenToResourceDeleteEventResponse, ApiError>
-    {
-        info!("listen_to_resource_delete_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceDeleteEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_delete_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -167,9 +188,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn listen_to_resource_state_change_event(
         &self,
         data: models::ResourceStateChangeEvent,
-        context: &C) -> Result<ListenToResourceStateChangeEventResponse, ApiError>
-    {
-        info!("listen_to_resource_state_change_event({:?}) - X-Span-ID: {:?}", data, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListenToResourceStateChangeEventResponse, ApiError> {
+        info!(
+            "listen_to_resource_state_change_event({:?}) - X-Span-ID: {:?}",
+            data,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -177,9 +202,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn create_resource(
         &self,
         resource: models::ResourceCreate,
-        context: &C) -> Result<CreateResourceResponse, ApiError>
-    {
-        info!("create_resource({:?}) - X-Span-ID: {:?}", resource, context.get().0.clone());
+        context: &C,
+    ) -> Result<CreateResourceResponse, ApiError> {
+        info!(
+            "create_resource({:?}) - X-Span-ID: {:?}",
+            resource,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -187,9 +216,13 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
     async fn delete_resource(
         &self,
         id: String,
-        context: &C) -> Result<DeleteResourceResponse, ApiError>
-    {
-        info!("delete_resource(\"{}\") - X-Span-ID: {:?}", id, context.get().0.clone());
+        context: &C,
+    ) -> Result<DeleteResourceResponse, ApiError> {
+        info!(
+            "delete_resource(\"{}\") - X-Span-ID: {:?}",
+            id,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -199,9 +232,15 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         fields: Option<String>,
         offset: Option<i32>,
         limit: Option<i32>,
-        context: &C) -> Result<ListResourceResponse, ApiError>
-    {
-        info!("list_resource({:?}, {:?}, {:?}) - X-Span-ID: {:?}", fields, offset, limit, context.get().0.clone());
+        context: &C,
+    ) -> Result<ListResourceResponse, ApiError> {
+        info!(
+            "list_resource({:?}, {:?}, {:?}) - X-Span-ID: {:?}",
+            fields,
+            offset,
+            limit,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -210,9 +249,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         resource: models::ResourceUpdate,
-        context: &C) -> Result<PatchResourceResponse, ApiError>
-    {
-        info!("patch_resource(\"{}\", {:?}) - X-Span-ID: {:?}", id, resource, context.get().0.clone());
+        context: &C,
+    ) -> Result<PatchResourceResponse, ApiError> {
+        info!(
+            "patch_resource(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            resource,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -221,10 +265,14 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         id: String,
         fields: Option<String>,
-        context: &C) -> Result<RetrieveResourceResponse, ApiError>
-    {
-        info!("retrieve_resource(\"{}\", {:?}) - X-Span-ID: {:?}", id, fields, context.get().0.clone());
+        context: &C,
+    ) -> Result<RetrieveResourceResponse, ApiError> {
+        info!(
+            "retrieve_resource(\"{}\", {:?}) - X-Span-ID: {:?}",
+            id,
+            fields,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
-
 }

@@ -465,7 +465,7 @@ fn main() {
         Some("ListResourceSpecification") => {
             let result = rt.block_on(client.list_resource_specification(
                   Some("fields_example".to_string()),
-                  Some(56),
+                  Some(0),
                   Some(56)
             ));
             info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());

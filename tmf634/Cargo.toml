@@ -15,6 +15,11 @@ name = "tmf634_server"
 path = "server/src/main.rs"
 required-features = ["server"]
 
+[[test]]
+name = "integration_server_test"
+path = "server/tests/integration_test.rs"
+required-features = ["server"]
+
 [features]
 default = ["client", "server"]
 client = [

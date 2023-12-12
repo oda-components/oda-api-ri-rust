@@ -46,7 +46,7 @@ $ RUST_LOG=info cargo run --package oda_ri_tmf634 --bin tmf634_client -- --host 
 > Before run tests required run [Redis](README.md#redis) and create index.
 
 ```bash
-$ cargo test --package oda_ri_tmf634 --bin tmf634_server -- --nocapture
+$ cargo test --package oda_ri_tmf634 --test integration_server_test -- --nocapture
 ```
 
 ## TMF639

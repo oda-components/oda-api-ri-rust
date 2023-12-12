@@ -18,7 +18,6 @@ required-features = ["server"]
 [[test]]
 name = "integration_server_test"
 path = "server/tests/integration_test.rs"
-required-features = ["server"]
 
 [features]
 default = ["client", "server"]

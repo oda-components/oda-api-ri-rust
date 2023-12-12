@@ -15,6 +15,10 @@ name = "tmf634_server"
 path = "server/src/main.rs"
 required-features = ["server"]
 
+[[test]]
+name = "integration_server_test"
+path = "server/tests/integration_test.rs"
+
 [features]
 default = ["client", "server"]
 client = [
@@ -79,3 +83,5 @@ tokio-openssl = "0.6"
 redis = { version = "0.23.3", features = ["json", "tokio-comp"] }
 uuid = { version = "1.6.1", features = ["v7"] }
 
+[dev-dependencies]
+reqwest = "0.11"

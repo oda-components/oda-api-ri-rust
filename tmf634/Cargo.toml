@@ -21,7 +21,7 @@ server = ["hyper"]
 oda_sdk_tmf634 = { path = "../../oda-api-sdk-rust/tmf634" }
 # Common
 async-trait = "0.1.74"
-swagger = { version = "6.1", features = ["serdejson", "server", "client", "tls", "tcp"] }
+swagger = { version = "6.4.1", features = ["serdejson", "server", "client", "tls", "tcp"] }
 log = "0.4.0"
 serde_json = "1.0"
 hyper = { version = "0.14", features = ["full"], optional = true }

@@ -36,8 +36,7 @@ $ redis-cli
 
 ```bash
 $ RUST_LOG=info cargo run --package oda_ri_tmf634 --bin tmf634_server
-$ cargo run --package oda_ri_tmf634 --bin tmf634_client -- --help
-$ RUST_LOG=info cargo run --package oda_ri_tmf634 --bin tmf634_client -- --host localhost ListResourceSpecification
+$ cargo run --package oda_ri_tmf634 --bin tmf634_server -- --help
 ```
 
 ### Test
@@ -46,7 +45,7 @@ $ RUST_LOG=info cargo run --package oda_ri_tmf634 --bin tmf634_client -- --host 
 > Before run tests required run [Redis](README.md#redis) and create index.
 
 ```bash
-$ cargo test --package oda_ri_tmf634 --test integration_server_test -- --nocapture
+$ RUST_LOG=info cargo test --package oda_ri_tmf634 --test integration_server_test -- --nocapture
 ```
 
 ## TMF639
